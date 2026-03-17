@@ -1,0 +1,75 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { SITE_TITLE } from '../../consts';
+
+const rants = (await getCollection('rant')).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Rant | ${SITE_TITLE}`} description="Unfiltered thoughts and opinions" />
+		<style>
+			ul {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+				display: flex;
+				flex-direction: column;
+				gap: 1em;
+			}
+			li a {
+				display: block;
+				padding: 1.2em;
+				background: var(--bg-secondary);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				text-decoration: none;
+				transition: border-color 0.2s ease;
+			}
+			li a:hover {
+				border-color: var(--accent);
+			}
+			.title {
+				margin: 0;
+				color: var(--text-heading);
+				font-size: 1.2em;
+			}
+			.date {
+				margin: 0.25em 0 0 0;
+				color: var(--text-light);
+				font-size: 0.85em;
+			}
+			.desc {
+				margin: 0.5em 0 0 0;
+				color: var(--text);
+				font-size: 0.9em;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Rant</h1>
+			<p style="color: var(--text-light);">Unfiltered thoughts. No schedule, no structure.</p>
+			<ul>
+				{rants.map((r) => (
+					<li>
+						<a href={`/rant/${r.id}/`}>
+							<h4 class="title">{r.data.title}</h4>
+							<p class="date"><FormattedDate date={r.data.pubDate} /></p>
+							{r.data.description && <p class="desc">{r.data.description}</p>}
+						</a>
+					</li>
+				))}
+			</ul>
+		</main>
+		<Footer />
+	</body>
+</html>
