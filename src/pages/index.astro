@@ -1,0 +1,119 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<section class="hero">
+				<h1>Hey, I'm Andres</h1>
+				<p class="tagline">{SITE_DESCRIPTION}</p>
+				<blockquote>"Do it once, do it right"</blockquote>
+			</section>
+
+			<section class="tech">
+				<h2>What I work with</h2>
+				<div class="tech-grid">
+					<div class="tech-group">
+						<h3>Main stack</h3>
+						<ul>
+							<li>TypeScript</li>
+							<li>React / Next.js</li>
+							<li>Node.js</li>
+							<li>Tailwind CSS</li>
+							<li>MariaDB / PostgreSQL</li>
+						</ul>
+					</div>
+					<div class="tech-group">
+						<h3>Also use</h3>
+						<ul>
+							<li>Laravel / Vue.js</li>
+							<li>Go / Rust / Python</li>
+							<li>Docker / Linux</li>
+							<li>React Native / Flutter</li>
+							<li>Arduino / ESP32</li>
+						</ul>
+					</div>
+				</div>
+			</section>
+
+			<section class="cta">
+				<p>
+					Check out my <a href="/blog">blog</a>,
+					browse my <a href="/projects">projects</a>,
+					or learn more <a href="/about">about me</a>.
+				</p>
+			</section>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.hero {
+		margin-bottom: 3em;
+	}
+	.hero h1 {
+		font-size: 2.5em;
+		margin-bottom: 0.25em;
+	}
+	.tagline {
+		font-size: 1.2em;
+		color: var(--text-light);
+		margin-bottom: 1em;
+	}
+	blockquote {
+		font-style: italic;
+		font-size: 1.1em;
+	}
+	.tech {
+		margin-bottom: 3em;
+	}
+	.tech h2 {
+		font-size: 1.5em;
+		margin-bottom: 1em;
+	}
+	.tech-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 2em;
+	}
+	.tech-group h3 {
+		font-size: 1.1em;
+		color: var(--accent);
+		margin-bottom: 0.5em;
+	}
+	.tech-group ul {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.tech-group li {
+		padding: 0.25em 0;
+		color: var(--text);
+	}
+	.cta {
+		padding: 1.5em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		text-align: center;
+	}
+	.cta p {
+		margin: 0;
+	}
+	@media (max-width: 720px) {
+		.tech-grid {
+			grid-template-columns: 1fr;
+			gap: 1em;
+		}
+	}
+</style>

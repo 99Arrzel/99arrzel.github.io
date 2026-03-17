@@ -1,0 +1,156 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+
+const projects = [
+	{
+		name: 'PMSAC',
+		description: 'ID-card based attendance system that tracks check-in/check-out times using barcode scanning. Uses JSON as a database - zero setup required.',
+		tech: ['Node.js', 'Express', 'Bootstrap', 'Html5Qrcode'],
+		url: 'https://github.com/99Arrzel/PMSAC',
+	},
+	{
+		name: 'BCP-ADB-BOLIVIA',
+		description: "Can't get the bank's QR payment API? Automate BCP Bolivia payment QR generation using your phone via ADB.",
+		tech: ['Python', 'ADB'],
+		url: 'https://github.com/99Arrzel/BCP-ADB-BOLIVIA',
+	},
+	{
+		name: 'Ventazanga',
+		description: 'A marketplace where sellers must list real prices. No more "price in DM".',
+		tech: ['Laravel', 'Vue.js', 'Inertia.js', 'Tailwind'],
+		url: 'https://github.com/99Arrzel/Ventazanga',
+	},
+	{
+		name: 'SuperLMS',
+		description: 'A Learning Management System with 3 roles (Admin, Teacher, Student), classrooms, assignments, forums, and dark mode.',
+		tech: ['Laravel', 'Vue.js', 'MySQL', 'Redis'],
+		url: 'https://github.com/99Arrzel/SuperLMS',
+	},
+	{
+		name: 'ERPNPC',
+		description: 'ERP system with modules for business management, built with modern PHP and JavaScript tooling.',
+		tech: ['Laravel', 'Vue.js', 'Inertia.js'],
+		url: 'https://github.com/99Arrzel/ERPNPC',
+	},
+	{
+		name: 'PAPP2',
+		description: 'Street food place rating app - backend API + React Native frontend.',
+		tech: ['AdonisJS', 'TypeScript', 'React Native'],
+		url: 'https://github.com/99Arrzel/PAPP2',
+	},
+	{
+		name: 'PIDwithDimmer',
+		description: 'PID temperature controller with a web dashboard. Uses WebSockets to communicate with an ESP32.',
+		tech: ['TypeScript', 'WebSockets', 'ESP32'],
+		url: 'https://github.com/99Arrzel/PIDwithDimmer',
+	},
+	{
+		name: 'OniChanApproves',
+		description: 'A bot that receives SonarQube webhooks and posts a gif depending on whether the quality gate passed or failed.',
+		tech: ['TypeScript'],
+		url: 'https://github.com/99Arrzel/OniChanApproves',
+	},
+	{
+		name: 'Prusa-Slicer-Web-Api',
+		description: 'Web API wrapper for PrusaSlicer, allowing remote slicing via HTTP requests.',
+		tech: ['Rust'],
+		url: 'https://github.com/99Arrzel/Prusa-Slicer-Web-Api',
+	},
+	{
+		name: 'BitFlipDetector',
+		description: 'Cosmic ray bit-flip detector for Raspberry Pi. Allocates memory and monitors for bit changes - intended for high-altitude balloon experiments.',
+		tech: ['C'],
+		url: 'https://github.com/99Arrzel/BitFlipDetector',
+	},
+	{
+		name: 'AoC2024-GO',
+		description: 'Advent of Code 2024 solutions in Go.',
+		tech: ['Go'],
+		url: 'https://github.com/99Arrzel/AoC2024-GO',
+	},
+	{
+		name: 'ShortestPathDijkstra',
+		description: "Interactive Dijkstra's shortest path visualization using Cytoscape.js.",
+		tech: ['JavaScript', 'Cytoscape.js'],
+		url: 'https://github.com/99Arrzel/ShortestPathDijkstra',
+	},
+];
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Projects | ${SITE_TITLE}`} description="Projects by Andres Carrillo" />
+		<style>
+			.projects-grid {
+				display: grid;
+				gap: 1.5em;
+			}
+			.project-card {
+				padding: 1.5em;
+				background: var(--bg-secondary);
+				border: 1px solid var(--border);
+				border-radius: 8px;
+				transition: border-color 0.2s ease;
+			}
+			.project-card:hover {
+				border-color: var(--accent);
+			}
+			.project-card h3 {
+				margin: 0 0 0.5em 0;
+				font-size: 1.2em;
+			}
+			.project-card h3 a {
+				text-decoration: none;
+				color: var(--text-heading);
+			}
+			.project-card h3 a:hover {
+				color: var(--accent);
+			}
+			.project-card p {
+				margin: 0 0 0.75em 0;
+				color: var(--text-light);
+				font-size: 0.9em;
+				line-height: 1.5;
+			}
+			.tech-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5em;
+			}
+			.tech-tag {
+				padding: 0.2em 0.6em;
+				background: var(--bg);
+				border: 1px solid var(--border);
+				border-radius: 4px;
+				font-size: 0.75em;
+				color: var(--accent);
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Projects</h1>
+			<p>A selection of things I've built. More on <a href="https://github.com/99arrzel" target="_blank">GitHub</a>.</p>
+
+			<div class="projects-grid">
+				{projects.map((project) => (
+					<div class="project-card">
+						<h3><a href={project.url} target="_blank">{project.name}</a></h3>
+						<p>{project.description}</p>
+						<div class="tech-tags">
+							{project.tech.map((t) => (
+								<span class="tech-tag">{t}</span>
+							))}
+						</div>
+					</div>
+				))}
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>

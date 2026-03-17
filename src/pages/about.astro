@@ -1,0 +1,53 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`About | ${SITE_TITLE}`} description="About Andres Carrillo - full-stack developer from Bolivia" />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>About me</h1>
+
+			<p>
+				I'm a full-stack developer from Bolivia. I work mostly with TypeScript, React, Next.js,
+				and Node.js, but I've touched a lot of different technologies over the years - from Laravel
+				and Vue to Rust, Go, and even Arduino/ESP32 hardware projects.
+			</p>
+
+			<p>
+				I like building practical things. Most of my projects come from real problems:
+				a bank that doesn't offer a QR payment API (so I automated it via ADB),
+				marketplace listings with no prices (so I built a marketplace where prices are mandatory),
+				manual attendance tracking (so I built a barcode-scanning system).
+			</p>
+
+			<p>
+				My philosophy is simple: <strong>do it once, do it right</strong>. I'd rather spend
+				time building something properly than patching it forever.
+			</p>
+
+			<h2>What I've worked on</h2>
+			<ul>
+				<li>Full-stack web applications (React, Next.js, Laravel, Vue)</li>
+				<li>Mobile apps (React Native, Flutter)</li>
+				<li>Backend APIs (Node.js, AdonisJS, Express)</li>
+				<li>IoT and embedded systems (Arduino, ESP32, Raspberry Pi)</li>
+				<li>Automation and scraping tools</li>
+				<li>Computer vision (YOLOv9)</li>
+			</ul>
+
+			<h2>Get in touch</h2>
+			<p>
+				Find me on <a href="https://github.com/99arrzel" target="_blank">GitHub</a>.
+			</p>
+		</main>
+		<Footer />
+	</body>
+</html>
