@@ -2,7 +2,7 @@
 
 My personal site. Home to a wall of sad memes, a live countdown to the end of the year, and a list of side projects I mostly never finished.
 
-Live at [99arrzel.github.io](https://99arrzel.github.io).
+Live at [99arrzel.github.io](https://99arrzel.github.io). The rest of the trash lives on [my GitHub](https://github.com/99Arrzel).
 
 ## What's here
 
