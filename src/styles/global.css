@@ -38,6 +38,7 @@ body {
 	background: var(--bg);
 	word-wrap: break-word;
 	overflow-wrap: break-word;
+	overflow-x: hidden;
 	color: var(--text);
 	font-size: 20px;
 	line-height: 1.7;

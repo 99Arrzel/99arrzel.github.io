@@ -3,6 +3,104 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+// Sad LATAM memes for the wall. `src` is a GIF URL; if null, a labeled placeholder
+// tile renders so the layout stays solid until real GIFs are wired in.
+const wallTiles = [
+	{ name: 'Cooper crying (Interstellar)', src: 'https://media.giphy.com/media/l3vR4CdLInXOhr3rO/giphy.gif' },
+	{ name: 'El Chavo llorando',       src: 'https://media.giphy.com/media/3o6nUZ2uG6JKaUL5xC/giphy.gif' },
+	{ name: 'Spider-Man depression',   src: 'https://media.giphy.com/media/XeSUAqI8uGTxL145ut/giphy.gif' },
+	{ name: 'Pablo Escobar esperando', src: 'https://media.giphy.com/media/xIdtUuXvkhn4NlJ4Uf/giphy.gif' },
+	{ name: 'Walter White',            src: 'https://media.giphy.com/media/l0HU8V1CHKTUFtuFO/giphy.gif' },
+	{ name: 'Joker crying hysterically', src: 'https://media.tenor.com/-vpfZLAXAwkAAAAM/crying-hysterically-crying-meme.gif' },
+	{ name: 'BoJack',                  src: 'https://media.giphy.com/media/xT9DPwaYSIlFMqQBYA/giphy.gif' },
+	{ name: 'Don Ramón triste',        src: 'https://media.giphy.com/media/Md0hqYn50MoklMF10F/giphy.gif' },
+	{ name: 'Inside Out Sadness',      src: 'https://media.giphy.com/media/avvZ3Y5ucf09a/giphy.gif' },
+	{ name: 'Sad Kermit',              src: 'https://media.giphy.com/media/AhLswQtOFWP2MFPqYn/giphy.gif' },
+	{ name: 'Thanos impossible',       src: '/masonry/thanos-impossible.mp4' },
+	{ name: 'Pedro Pascal triste',     src: 'https://media.giphy.com/media/EOEtX31UeW98gFHiok/giphy.gif' },
+	{ name: 'Sad Frodo',               src: 'https://media.giphy.com/media/TaMtN8VaLu4wM/giphy.gif' },
+	{ name: 'Sad SpongeBob',           src: 'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif' },
+	{ name: 'Squidward window',        src: 'https://media.giphy.com/media/8T1CY9YYb9JsrrVVzn/giphy.gif' },
+	{ name: 'Crying Jordan',           src: 'https://media.giphy.com/media/3o6EhNnoVpx2LbfVnO/giphy.gif' },
+	{ name: 'Joker tercermundista',    src: '/masonry/locura-tik-tok-joker-tercermundista.mp4' },
+	{ name: 'Sad Detective Pikachu',   src: 'https://media.giphy.com/media/SHP92Zpivx9Pfr1geG/giphy.gif' },
+	{ name: 'Sad Keanu',               src: 'https://media.giphy.com/media/IdYUzn025MwLJnEKLV/giphy.gif' },
+	{ name: 'Sad Pepe the Frog',       src: 'https://media.giphy.com/media/wA7JI5LRuqbIQYck3N/giphy.gif' },
+	{ name: 'Sad Bart Simpson',        src: 'https://media.giphy.com/media/AzAa23iNkA5I6jQKmG/giphy.gif' },
+	{ name: 'Michael Scott NOOO',      src: 'https://media.giphy.com/media/xTEnPv5x4FCBpHgAas/giphy.gif' },
+	{ name: 'Papu XD',                 src: '/masonry/papu-xd.mp4' },
+	{ name: 'SDLG papu',               src: '/masonry/sdlg-papu.mp4' },
+	{ name: 'Social credit SpongeBob', src: '/masonry/social-credit-sad-spongebob.mp4' },
+	{ name: 'Kobayashi Dragon Maid',   src: '/masonry/spongebob-kobayashi-dragon-maid.mp4' },
+];
+
+const services = [
+	{
+		title: 'Production SaaS, end-to-end',
+		body: 'Greenfield Next.js / TypeScript apps with auth, billing, and an AWS deploy pipeline you can hand off. I build the whole stack — frontend, API, database, infra, payments — so you ship instead of stitching.',
+		tags: ['Next.js', 'TypeScript', 'Prisma', 'AWS ECS', 'Stripe'],
+	},
+	{
+		title: 'Legacy modernization',
+		body: 'Migrate an old PHP or Laravel product onto a modern stack without breaking what works. I just did this at PostReminder — PHP to a Next.js 16 / React 19 monorepo with a unified type system and a real CI/CD pipeline.',
+		tags: ['PHP → Next.js', 'Monorepos', 'Turborepo + Bun', 'CloudFormation'],
+	},
+	{
+		title: 'Stripe billing & access control',
+		body: 'Subscriptions, proration, webhooks, plan-based feature gating, RBAC with granular permissions and per-workspace overrides. The boring stuff that breaks customer trust when it goes wrong.',
+		tags: ['Stripe', 'RBAC', 'Entitlements', 'Webhooks'],
+	},
+	{
+		title: 'E-commerce storefronts',
+		body: 'Headless commerce on Next.js with BigCommerce or similar, plus a headless CMS (Prismic) so your content team can ship without engineering. Performance and checkout reliability included.',
+		tags: ['Next.js', 'BigCommerce', 'Prismic', 'Headless CMS'],
+	},
+	{
+		title: 'LLM-augmented engineering',
+		body: 'Multi-agent workflows (isolated git worktrees, skill-based agents, automated review) so a small team can ship at the cadence of a much larger one. I use this every day; I can help your team adopt it.',
+		tags: ['LLM workflows', 'Claude Code', 'Automation'],
+	},
+];
+
+const skills = [
+	{
+		group: 'Languages',
+		items: ['TypeScript', 'JavaScript', 'PHP', 'Python', 'Rust', 'Go'],
+	},
+	{
+		group: 'Frontend',
+		items: ['React', 'Next.js', 'Vue.js', 'Tailwind CSS', 'HTML5', 'CSS3'],
+	},
+	{
+		group: 'Backend',
+		items: ['Node.js', 'Laravel', 'REST APIs', 'Spring Boot (intro)'],
+	},
+	{
+		group: 'Databases',
+		items: ['MySQL', 'PostgreSQL', 'Prisma ORM', 'Relational design'],
+	},
+	{
+		group: 'Infrastructure / DevOps',
+		items: ['AWS (ECS, ECR)', 'CloudFormation', 'GitHub Actions', 'CI/CD', 'Docker', 'Bun', 'Turborepo'],
+	},
+	{
+		group: 'Payments / Auth',
+		items: ['Stripe subscriptions', 'Stripe webhooks', 'Proration', 'RBAC', 'Plan-based entitlements'],
+	},
+	{
+		group: 'E-commerce / CMS',
+		items: ['BigCommerce', 'Prismic'],
+	},
+	{
+		group: 'Mobile / Embedded',
+		items: ['React Native', 'Flutter', 'Arduino', 'ESP32', 'Raspberry Pi'],
+	},
+	{
+		group: 'Workflow',
+		items: ['Git', 'Teamwork', 'LLM-augmented engineering', 'Multi-agent worktrees', 'Automated review'],
+	},
+];
 ---
 
 <!doctype html>
@@ -13,107 +111,421 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 	<body>
 		<Header />
 		<main>
-			<section class="hero">
-				<h1>Hey, I'm Andres</h1>
-				<p class="tagline">{SITE_DESCRIPTION}</p>
-				<blockquote>"Do it once, do it right"</blockquote>
+			<section class="wall" aria-label="Time is running out">
+				<div class="wall-masonry" aria-hidden="true">
+					{wallTiles.map((tile, i) => (
+						<div class={`tile ${tile.src ? '' : 'placeholder'}`} style={`--seed: ${i};`}>
+							{!tile.src ? (
+								<span class="tile-label">{tile.name}</span>
+							) : tile.src.endsWith('.mp4') ? (
+								<video src={tile.src} autoplay loop muted playsinline preload="metadata"></video>
+							) : (
+								<img src={tile.src} alt="" loading="lazy" />
+							)}
+						</div>
+					))}
+				</div>
+				<div class="wall-content">
+					<p class="wall-intro">Hey, I'm <strong>Andres</strong> &middot; full-stack engineer in Buenos Aires</p>
+					<section class="countdown" aria-label="Time remaining this year">
+						<p class="countdown-label">Time left this year</p>
+						<div class="countdown-grid" id="countdown">
+							<div class="unit"><span class="num" data-unit="months">--</span><span class="lbl">months</span></div>
+							<div class="unit"><span class="num" data-unit="days">--</span><span class="lbl">days</span></div>
+							<div class="unit"><span class="num" data-unit="hours">--</span><span class="lbl">hours</span></div>
+							<div class="unit"><span class="num" data-unit="minutes">--</span><span class="lbl">minutes</span></div>
+							<div class="unit"><span class="num" data-unit="seconds">--</span><span class="lbl">seconds</span></div>
+						</div>
+						<p class="countdown-foot">Memento mori. Build the thing.</p>
+					</section>
+					<p class="availability">
+						<span class="dot" aria-hidden="true"></span>
+						Open to freelance &amp; full-time work &middot; remote globally
+					</p>
+				</div>
+				<a class="scroll-hint" href="#work">
+					<span>Scroll for the boring stuff</span>
+					<span class="arrow" aria-hidden="true">&darr;</span>
+				</a>
 			</section>
 
-			<section class="tech">
-				<h2>What I work with</h2>
-				<div class="tech-grid">
-					<div class="tech-group">
-						<h3>Main stack</h3>
-						<ul>
-							<li>TypeScript</li>
-							<li>React / Next.js</li>
-							<li>Node.js</li>
-							<li>Tailwind CSS</li>
-							<li>MariaDB / PostgreSQL</li>
-						</ul>
-					</div>
-					<div class="tech-group">
-						<h3>Also use</h3>
-						<ul>
-							<li>Laravel / Vue.js</li>
-							<li>Go / Rust / Python</li>
-							<li>Docker / Linux</li>
-							<li>React Native / Flutter</li>
-							<li>Arduino / ESP32</li>
-						</ul>
-					</div>
+			<section id="work" class="services">
+				<h2>How I can help</h2>
+				<div class="services-grid">
+					{services.map((s) => (
+						<div class="service-card">
+							<h3>{s.title}</h3>
+							<p>{s.body}</p>
+							<div class="tag-row">
+								{s.tags.map((t) => <span class="tag">{t}</span>)}
+							</div>
+						</div>
+					))}
+				</div>
+			</section>
+
+			<section class="skills">
+				<h2>Full skill inventory</h2>
+				<div class="skills-grid">
+					{skills.map((group) => (
+						<div class="skill-group">
+							<h3>{group.group}</h3>
+							<div class="tag-row">
+								{group.items.map((item) => <span class="tag">{item}</span>)}
+							</div>
+						</div>
+					))}
 				</div>
 			</section>
 
 			<section class="cta">
+				<h2>Let's work together</h2>
 				<p>
-					Check out my <a href="/blog">blog</a>,
-					browse my <a href="/projects">projects</a>,
-					or learn more <a href="/about">about me</a>.
+					Looking for help on a project, a freelance engagement, or a full-time role?
+					The fastest way is a DM on <a href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">LinkedIn</a>.
+				</p>
+				<p>
+					You can also browse <a href="/projects">my projects</a>
+					or check out the code on <a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.
 				</p>
 			</section>
 		</main>
 		<Footer />
+		<script is:inline>
+			(function () {
+				const root = document.getElementById('countdown');
+				if (!root) return;
+				const fields = {
+					months: root.querySelector('[data-unit="months"]'),
+					days: root.querySelector('[data-unit="days"]'),
+					hours: root.querySelector('[data-unit="hours"]'),
+					minutes: root.querySelector('[data-unit="minutes"]'),
+					seconds: root.querySelector('[data-unit="seconds"]'),
+				};
+				const pad = (n) => String(Math.max(0, n)).padStart(2, '0');
+				function tick() {
+					const now = new Date();
+					const target = new Date(now.getFullYear() + 1, 0, 1, 0, 0, 0, 0);
+					let years = target.getFullYear() - now.getFullYear();
+					let months = target.getMonth() - now.getMonth();
+					let days = target.getDate() - now.getDate();
+					let hours = target.getHours() - now.getHours();
+					let minutes = target.getMinutes() - now.getMinutes();
+					let seconds = target.getSeconds() - now.getSeconds();
+					if (seconds < 0) { seconds += 60; minutes--; }
+					if (minutes < 0) { minutes += 60; hours--; }
+					if (hours < 0) { hours += 24; days--; }
+					if (days < 0) {
+						const prevMonth = new Date(target.getFullYear(), target.getMonth(), 0);
+						days += prevMonth.getDate();
+						months--;
+					}
+					if (months < 0) { months += 12; years--; }
+					const totalMonths = Math.max(0, years * 12 + months);
+					fields.months.textContent = pad(totalMonths);
+					fields.days.textContent = pad(days);
+					fields.hours.textContent = pad(hours);
+					fields.minutes.textContent = pad(minutes);
+					fields.seconds.textContent = pad(seconds);
+				}
+				tick();
+				setInterval(tick, 1000);
+			})();
+		</script>
 	</body>
 </html>
 
 <style>
-	.hero {
-		margin-bottom: 3em;
+	/* ===== Hero wall (masonry of sad gifs + countdown) ===== */
+	.wall {
+		position: relative;
+		height: 100vh;
+		width: 100vw;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
+		margin-top: -3em;
+		margin-bottom: 4em;
+		padding: 0;
+		overflow: hidden;
+		isolation: isolate;
+		background: #0a0a10;
 	}
-	.hero h1 {
-		font-size: 2.5em;
-		margin-bottom: 0.25em;
+	.wall-masonry {
+		column-count: 4;
+		column-gap: 0.4em;
+		padding: 0.4em;
 	}
-	.tagline {
-		font-size: 1.2em;
-		color: var(--text-light);
-		margin-bottom: 1em;
+	.wall-masonry .tile {
+		break-inside: avoid;
+		margin-bottom: 0.5em;
+		border-radius: 8px;
+		overflow: hidden;
+		position: relative;
+		background: hsl(calc(var(--seed, 0) * 47deg + 220deg) 14% 12%);
 	}
-	blockquote {
+	.wall-masonry .tile.placeholder {
+		min-height: 220px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+	.wall-masonry .tile img,
+	.wall-masonry .tile video {
+		width: 100%;
+		height: auto;
+		display: block;
+	}
+	.wall-masonry .tile-label {
+		position: relative;
+		z-index: 1;
+		padding: 0.5em 0.9em;
+		font-size: 0.78em;
+		color: rgba(255,255,255,0.45);
+		text-align: center;
 		font-style: italic;
-		font-size: 1.1em;
+		letter-spacing: 0.02em;
+		line-height: 1.35;
 	}
-	.tech {
+	.wall-content {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		gap: 1.25em;
+		text-align: center;
+		padding: 2em 1em;
+		pointer-events: none;
+	}
+	.wall-content > * {
+		pointer-events: auto;
+	}
+	.wall-intro {
+		margin: 0;
+		padding: 0.5em 1em;
+		font-size: 0.95em;
+		color: rgba(255,255,255,0.85);
+		letter-spacing: 0.02em;
+		background: rgba(15, 15, 20, 0.55);
+		backdrop-filter: blur(8px);
+		border: 1px solid rgba(255,255,255,0.1);
+		border-radius: 999px;
+	}
+	.wall-intro strong {
+		color: #fff;
+		font-weight: 600;
+	}
+	.scroll-hint {
+		position: absolute;
+		bottom: 1.25em;
+		left: 50%;
+		transform: translateX(-50%);
+		z-index: 3;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.3em;
+		padding: 0.5em 1em;
+		background: rgba(15, 15, 20, 0.25);
+		backdrop-filter: blur(16px) saturate(180%);
+		-webkit-backdrop-filter: blur(16px) saturate(180%);
+		border: 1px solid rgba(255,255,255,0.06);
+		border-radius: 999px;
+		color: rgba(255,255,255,0.75);
+		text-decoration: none;
+		font-size: 0.8em;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		transition: color 0.2s ease, background 0.2s ease;
+	}
+	.scroll-hint:hover {
+		background: rgba(15, 15, 20, 0.45);
+	}
+	.scroll-hint:hover {
+		color: #fff;
+	}
+	.scroll-hint .arrow {
+		font-size: 1.5em;
+		animation: bob 1.8s ease-in-out infinite;
+	}
+	@keyframes bob {
+		0%, 100% { transform: translateY(0); }
+		50% { transform: translateY(6px); }
+	}
+	.availability {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5em;
+		padding: 0.4em 0.85em;
+		background: rgba(255,255,255,0.06);
+		border: 1px solid rgba(255,255,255,0.12);
+		border-radius: 999px;
+		font-size: 0.9em;
+		color: rgba(255,255,255,0.85);
+		margin: 0;
+		backdrop-filter: blur(4px);
+	}
+	.availability .dot {
+		display: inline-block;
+		width: 0.55em;
+		height: 0.55em;
+		border-radius: 50%;
+		background: #22c55e;
+		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
+	}
+	.countdown {
+		margin: 0;
+		padding: 1.75em 1.5em;
+		border: 1px solid rgba(255,255,255,0.12);
+		border-radius: 12px;
+		background: rgba(15, 15, 20, 0.55);
+		backdrop-filter: blur(8px);
+		text-align: center;
+		width: 100%;
+		max-width: 640px;
+	}
+	.countdown-label {
+		margin: 0 0 0.85em 0;
+		font-size: 0.78em;
+		text-transform: uppercase;
+		letter-spacing: 0.22em;
+		color: rgba(255,255,255,0.55);
+	}
+	.countdown-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+		gap: 0.5em;
+	}
+	.countdown .unit {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0.5em 0.25em;
+	}
+	.countdown .num {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: clamp(1.8em, 6vw, 2.8em);
+		font-weight: 600;
+		color: #fff;
+		line-height: 1;
+		font-variant-numeric: tabular-nums;
+		text-shadow: 0 2px 12px rgba(0,0,0,0.5);
+	}
+	.countdown .lbl {
+		margin-top: 0.5em;
+		font-size: 0.7em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: rgba(255,255,255,0.55);
+	}
+	.countdown-foot {
+		margin: 1em 0 0 0;
+		font-size: 0.88em;
+		font-style: italic;
+		color: rgba(255,255,255,0.55);
+	}
+	@media (min-width: 1600px) {
+		.wall-masonry { column-count: 5; }
+	}
+	@media (max-width: 1024px) {
+		.wall-masonry { column-count: 3; }
+	}
+	@media (max-width: 640px) {
+		.wall-masonry { column-count: 2; }
+		.countdown .num { font-size: clamp(1.4em, 7vw, 2em); }
+		.countdown .lbl { font-size: 0.6em; letter-spacing: 0.08em; }
+	}
+	.services {
 		margin-bottom: 3em;
 	}
-	.tech h2 {
+	.services h2,
+	.skills h2,
+	.cta h2 {
 		font-size: 1.5em;
 		margin-bottom: 1em;
 	}
-	.tech-grid {
+	.services-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 2em;
+		gap: 1.25em;
 	}
-	.tech-group h3 {
-		font-size: 1.1em;
-		color: var(--accent);
-		margin-bottom: 0.5em;
-	}
-	.tech-group ul {
-		list-style: none;
-		padding: 0;
-		margin: 0;
-	}
-	.tech-group li {
-		padding: 0.25em 0;
-		color: var(--text);
-	}
-	.cta {
-		padding: 1.5em;
+	.service-card {
+		padding: 1.25em 1.5em;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border);
 		border-radius: 8px;
-		text-align: center;
+		transition: border-color 0.2s ease;
+	}
+	.service-card:hover {
+		border-color: var(--accent);
+	}
+	.service-card h3 {
+		margin: 0 0 0.4em 0;
+		font-size: 1.1em;
+		color: var(--text-heading);
+	}
+	.service-card p {
+		margin: 0 0 0.85em 0;
+		color: var(--text-light);
+		font-size: 0.93em;
+		line-height: 1.55;
+	}
+	.skills {
+		margin-bottom: 3em;
+	}
+	.skills-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.25em;
+	}
+	.skill-group {
+		padding: 1em 1.25em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+	}
+	.skill-group h3 {
+		margin: 0 0 0.6em 0;
+		font-size: 0.95em;
+		color: var(--accent);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.tag-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4em;
+	}
+	.tag {
+		padding: 0.2em 0.6em;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		font-size: 0.78em;
+		color: var(--accent);
+	}
+	.cta {
+		padding: 1.75em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 8px;
 	}
 	.cta p {
-		margin: 0;
+		margin: 0 0 0.6em 0;
+	}
+	.cta p:last-child {
+		margin-bottom: 0;
 	}
 	@media (max-width: 720px) {
-		.tech-grid {
+		.services-grid,
+		.skills-grid {
 			grid-template-columns: 1fr;
 			gap: 1em;
+		}
+		.hero h1 {
+			font-size: 2em;
 		}
 	}
 </style>
