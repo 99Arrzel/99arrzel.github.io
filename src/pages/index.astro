@@ -342,6 +342,9 @@ const skills = [
 		font-size: 0.8em;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
+		/* It's absolutely positioned with left:50%, which otherwise caps its
+		   width at half the viewport and forces the label to wrap into a blob. */
+		white-space: nowrap;
 		transition: color 0.2s ease, background 0.2s ease;
 	}
 	.scroll-hint:hover {
@@ -530,6 +533,20 @@ const skills = [
 		}
 		.hero h1 {
 			font-size: 2em;
+		}
+		/* On phones the full-bleed-under-header trick just clips the top row of
+		   memes behind the bar. Sit the hero flush *below* the header instead
+		   (-1.5em cancels the extra breathing room in main's top padding so the
+		   wall starts right at the header's bottom edge). */
+		.wall {
+			margin-top: -1.5em;
+			height: calc(100vh - var(--header-height));
+		}
+		/* These badges wrap to two lines on narrow screens; the pill (999px)
+		   radius then balloons into a blob, so round them like cards instead. */
+		.wall-intro,
+		.availability {
+			border-radius: 14px;
 		}
 	}
 </style>
