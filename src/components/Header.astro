@@ -34,6 +34,11 @@ import HeaderLink from './HeaderLink.astro';
 		z-index: 100;
 		margin: 0;
 		padding: 0 1em;
+		/* Fixed, predictable height so content padding (--header-height in
+		   global.css) always lines up and the bar can't grow if text wraps. */
+		height: var(--header-height);
+		display: flex;
+		align-items: center;
 		background: rgba(15, 15, 20, 0.25);
 		backdrop-filter: blur(16px) saturate(180%);
 		-webkit-backdrop-filter: blur(16px) saturate(180%);
@@ -48,8 +53,10 @@ import HeaderLink from './HeaderLink.astro';
 	h2 a.active {
 		text-decoration: none;
 		color: var(--text-heading);
+		white-space: nowrap;
 	}
 	nav {
+		width: 100%;
 		display: grid;
 		grid-template-columns: 1fr auto 1fr;
 		align-items: center;
@@ -87,6 +94,18 @@ import HeaderLink from './HeaderLink.astro';
 	@media (max-width: 720px) {
 		.social-links {
 			display: none;
+		}
+		/* The brand name doesn't fit alongside all four links on a phone and
+		   was wrapping mid-name. Drop it (the "Home" link still navigates home)
+		   and center the nav links in the bar. */
+		h2 {
+			display: none;
+		}
+		nav {
+			grid-template-columns: 1fr;
+		}
+		nav .internal-links {
+			justify-self: center;
 		}
 	}
 </style>

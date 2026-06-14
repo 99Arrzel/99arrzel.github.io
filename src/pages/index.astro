@@ -244,7 +244,10 @@ const skills = [
 		width: 100vw;
 		margin-left: calc(50% - 50vw);
 		margin-right: calc(50% - 50vw);
-		margin-top: -3em;
+		/* Cancel main's top padding so the hero sits flush under the
+		   transparent fixed header (full-bleed). Must match the main
+		   top padding in global.css. */
+		margin-top: calc(-1 * var(--header-height) - 1.5em);
 		margin-bottom: 4em;
 		padding: 0;
 		overflow: hidden;
