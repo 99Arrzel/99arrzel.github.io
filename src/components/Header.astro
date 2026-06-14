@@ -9,8 +9,9 @@ import HeaderLink from './HeaderLink.astro';
 		<div class="internal-links">
 			<HeaderLink href="/">Home</HeaderLink>
 			<HeaderLink href="/projects">Projects</HeaderLink>
+			<HeaderLink href="/vault">Vault</HeaderLink>
 			<HeaderLink href="/interviews">Interviews</HeaderLink>
-				<HeaderLink href="/about">About</HeaderLink>
+			<HeaderLink href="/about">About</HeaderLink>
 		</div>
 		<div class="social-links">
 			<a href="https://github.com/99arrzel" target="_blank">
@@ -95,17 +96,30 @@ import HeaderLink from './HeaderLink.astro';
 		.social-links {
 			display: none;
 		}
-		/* The brand name doesn't fit alongside all four links on a phone and
+		/* The brand name doesn't fit alongside all the links on a phone and
 		   was wrapping mid-name. Drop it (the "Home" link still navigates home)
 		   and center the nav links in the bar. */
 		h2 {
 			display: none;
+		}
+		header {
+			padding: 0 0.5em;
 		}
 		nav {
 			grid-template-columns: 1fr;
 		}
 		nav .internal-links {
 			justify-self: center;
+			display: flex;
+			flex-wrap: nowrap;
+			justify-content: center;
+			gap: 0.1em;
+		}
+		/* Shrink the links so all of them stay on one line (the header is a
+		   fixed height, so a wrap would spill out of the bar) down to ~320px. */
+		nav a {
+			font-size: 0.8em;
+			padding: 0.15em 0.4em;
 		}
 	}
 </style>
