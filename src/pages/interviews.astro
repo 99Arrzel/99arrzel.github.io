@@ -8,8 +8,26 @@ import { SITE_TITLE } from '../consts';
 // One entry per interview. Each interview groups the questions I fumbled in
 // that single loop, so it stays clear these came from one conversation — not
 // a string of separate rejections. Each question pairs an honest note on where
-// I slipped with the answer I should have given.
-const interviews = [
+// I slipped with the answer I should have given. A few entries aren't interviews
+// I actually sat — just questions I kept hearing about and wanted to understand;
+// those carry a "heard" note instead of a "slip".
+type Question = {
+	prompt: string;
+	answer: string;
+	topic: string;
+	tags: string[];
+	slip?: string;
+	heard?: string;
+	snippet?: string;
+};
+type Interview = {
+	company: string;
+	role: string;
+	date: string;
+	sub?: string;
+	questions: Question[];
+};
+const interviews: Interview[] = [
 	{
 		company: 'Sweatworks',
 		role: 'TypeScript Engineer',
@@ -28,7 +46,8 @@ const interviews = [
 const next = counter();
 next(); // 1
 next(); // 2  ← state persisted via the closure`,
-				tags: ['Closures', 'Lexical scope', 'Higher-order functions', 'JavaScript'],
+					topic: 'JavaScript',
+					tags: ['Closures', 'Lexical scope', 'Higher-order functions', 'JavaScript'],
 			},
 			{
 				prompt: 'Is JavaScript single-threaded or multi-threaded?',
@@ -42,11 +61,59 @@ Promise.resolve().then(() => console.log('3: microtask'));
 console.log('2: sync');
 // → 1, 2, 3, 4
 // stack empties → drain ALL microtasks (3) → then the next macrotask (4)`,
-				tags: ['Event loop', 'Microtasks', 'Web Workers', 'Concurrency'],
+					topic: 'Concurrency',
+					tags: ['Event loop', 'Microtasks', 'Web Workers', 'Concurrency'],
+			},
+		],
+	},
+	{
+		company: 'Overheard',
+		role: 'Web3 Developer interviews',
+		date: 'Jun 2026',
+		sub: 'Not an interview I sat — a question doing the rounds online that I wanted to actually understand.',
+		questions: [
+			{
+				prompt: 'What is a Merkle tree?',
+				heard:
+					"This one isn't a question I was asked — I'm not a web3 dev and I never applied. I just kept reading people hiring for web3 roles griping that juniors couldn't explain what a Merkle tree is. So I read an article on it out of curiosity, and the idea of hashing pairs of children over and over to build a tree was too neat to leave off this page.",
+				answer:
+					'A Merkle tree (or hash tree) is a tree built entirely out of hashes. You split your data into chunks and hash each one — those hashes are the leaves. Then you pair the leaves up, concatenate each pair and hash it to get their parent, and repeat that one level at a time, hashing pairs of children into a single parent, until you\'re left with one hash at the very top: the Merkle root. That root is a compact fingerprint of the whole dataset — flip a single byte in any leaf and its hash changes, which changes its parent, and that ripples all the way up to the root. The payoff is twofold: it\'s tamper-evident (any change is visible at the root), and it gives cheap membership proofs. To prove one chunk is in the set you don\'t need the whole set — just the sibling hash at each level on the path from your leaf up to the root (a "Merkle proof"), which is only about log₂(n) hashes for n leaves. Anyone holding the trusted root can recompute it from your chunk plus those siblings and confirm it matches. That\'s exactly how a Bitcoin or Ethereum light client checks a transaction is in a block without downloading the whole block, and the same idea underpins Git, IPFS and Certificate Transparency. (Detail worth knowing: when a level has an odd number of nodes, most implementations — Bitcoin included — just duplicate the last hash so it can still be paired.)',
+				snippet: `import { createHash } from 'node:crypto';
+const sha = (s) => createHash('sha256').update(s).digest('hex');
+
+// 1. hash each chunk of data → these are the leaves
+let level = ['a', 'b', 'c', 'd'].map(sha);
+
+// 2. hash pairs of children into a parent, repeat up to the top
+while (level.length > 1) {
+  const next = [];
+  for (let i = 0; i < level.length; i += 2) {
+    const left = level[i];
+    const right = level[i + 1] ?? left; // odd one out? pair it with itself
+    next.push(sha(left + right));
+  }
+  level = next;
+}
+
+const root = level[0]; // change ANY leaf and this root changes`,
+					topic: 'Web3',
+					tags: ['Merkle tree', 'Hashing', 'Blockchain', 'Data structures'],
 			},
 		],
 	},
 ];
+
+// Derive the topic filter facets straight from the questions, so the chips and
+// their counts can never drift from the data above. Insertion order is kept.
+const topicSlug = (s: string) =>
+	s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+const allQuestions = interviews.flatMap((iv) => iv.questions);
+const topicCounts = new Map<string, number>();
+for (const q of allQuestions) {
+	topicCounts.set(q.topic, (topicCounts.get(q.topic) ?? 0) + 1);
+}
+const topics = [...topicCounts].map(([name, count]) => ({ name, count, slug: topicSlug(name) }));
+const totalQuestions = allQuestions.length;
 ---
 
 <!doctype html>
@@ -65,6 +132,18 @@ console.log('2: sync');
 				Receipts of questions I fumbled, kept in public so I never fumble them twice.
 				Each one ships with the answer I <em>should</em> have given.
 			</p>
+			<div class="topic-filter" role="group" aria-label="Filter questions by topic">
+				<button type="button" class="topic-chip is-active" data-topic="all" aria-pressed="true">
+					All <span class="chip-count">{totalQuestions}</span>
+				</button>
+				{topics.map((t) => (
+					<button type="button" class="topic-chip" data-topic={t.slug} aria-pressed="false">
+						{t.name} <span class="chip-count">{t.count}</span>
+					</button>
+				))}
+			</div>
+			<p class="filter-status" role="status" aria-live="polite" hidden></p>
+			<p class="filter-empty" hidden>No questions match that topic yet.</p>
 			<div class="fails-grid">
 				{interviews.map((iv) => (
 					<article class="fail-card">
@@ -76,15 +155,16 @@ console.log('2: sync');
 							<span class="fail-date">{iv.date}</span>
 						</header>
 						<p class="fail-sub">
-							One interview &middot; {iv.questions.length} question{iv.questions.length === 1 ? '' : 's'} I should have nailed
+							{iv.sub ? iv.sub : <>One interview &middot; {iv.questions.length} question{iv.questions.length === 1 ? '' : 's'} I should have nailed</>}
 						</p>
 						<ol class="q-list">
 							{iv.questions.map((q, i) => (
-								<li class="q-item">
+								<li class="q-item" data-topic={topicSlug(q.topic)}>
 									<p class="fail-q"><span class="q-label" aria-hidden="true">{i + 1}</span>{q.prompt}</p>
-									<p class="fail-slip"><strong>Where I slipped:</strong> {q.slip}</p>
+									{q.slip && <p class="fail-slip"><strong>Where I slipped:</strong> {q.slip}</p>}
+									{q.heard && <p class="fail-slip"><strong>Where I heard it:</strong> {q.heard}</p>}
 									<div class="fail-answer">
-										<p class="answer-label">The answer I should've given</p>
+										<p class="answer-label">{q.heard ? 'What it actually is' : "The answer I should've given"}</p>
 										<p>{q.answer}</p>
 										{q.snippet && <Code code={q.snippet} lang="js" theme="github-dark" />}
 									</div>
@@ -102,11 +182,128 @@ console.log('2: sync');
 	</body>
 </html>
 
+<script>
+	// Progressive enhancement: with JS off, every question renders and the chips
+	// are simply inert. With JS on, the chips filter the questions by topic.
+	const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('.topic-chip'));
+	const items = Array.from(document.querySelectorAll<HTMLLIElement>('.q-item'));
+	const cards = Array.from(document.querySelectorAll<HTMLElement>('.fail-card'));
+	const status = document.querySelector<HTMLParagraphElement>('.filter-status');
+	const empty = document.querySelector<HTMLParagraphElement>('.filter-empty');
+
+	function topicLabel(slug: string) {
+		const chip = chips.find((c) => c.dataset.topic === slug);
+		return chip ? (chip.textContent ?? '').replace(/\s*\d+\s*$/, '').trim() : slug;
+	}
+
+	function apply(topic: string) {
+		let visible = 0;
+		for (const li of items) {
+			const show = topic === 'all' || li.dataset.topic === topic;
+			li.hidden = !show;
+			if (show) visible++;
+		}
+		// Hide cards left with no visible questions, and renumber the ones that
+		// remain so the circled labels always read 1, 2, 3… within each card.
+		for (const card of cards) {
+			let n = 0;
+			for (const li of card.querySelectorAll<HTMLLIElement>('.q-item')) {
+				if (li.hidden) continue;
+				n++;
+				const label = li.querySelector('.q-label');
+				if (label) label.textContent = String(n);
+			}
+			card.hidden = n === 0;
+		}
+		for (const c of chips) {
+			const on = c.dataset.topic === topic;
+			c.classList.toggle('is-active', on);
+			c.setAttribute('aria-pressed', String(on));
+		}
+		if (status) {
+			if (topic === 'all') {
+				status.hidden = true;
+			} else {
+				status.hidden = false;
+				status.textContent = `Showing ${visible} question${visible === 1 ? '' : 's'} on ${topicLabel(topic)}.`;
+			}
+		}
+		if (empty) empty.hidden = visible !== 0;
+		history.replaceState(null, '', topic === 'all' ? location.pathname : `#topic=${topic}`);
+	}
+
+	for (const c of chips) {
+		c.addEventListener('click', () => apply(c.dataset.topic ?? 'all'));
+	}
+
+	const fromHash = new URLSearchParams(location.hash.slice(1)).get('topic');
+	apply(fromHash && chips.some((c) => c.dataset.topic === fromHash) ? fromHash : 'all');
+</script>
+
 <style>
 	.fails-intro {
-		margin: -0.25em 0 1.75em 0;
+		margin: -0.25em 0 1.5em 0;
 		max-width: 65ch;
 		color: var(--text-light);
+	}
+	.topic-filter {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em;
+		margin: 0 0 1.5em 0;
+	}
+	.topic-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+		padding: 0.4em 0.85em;
+		font: inherit;
+		font-size: 0.85em;
+		line-height: 1;
+		color: var(--text-light);
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			color 0.15s ease,
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.topic-chip:hover {
+		color: var(--text);
+		border-color: var(--accent);
+	}
+	.topic-chip:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+	.topic-chip.is-active {
+		color: var(--bg);
+		background: var(--accent);
+		border-color: var(--accent);
+		font-weight: 600;
+	}
+	.chip-count {
+		font-size: 0.85em;
+		opacity: 0.65;
+		font-variant-numeric: tabular-nums;
+	}
+	.topic-chip.is-active .chip-count {
+		opacity: 0.85;
+	}
+	.filter-status,
+	.filter-empty {
+		margin: -0.75em 0 1.5em 0;
+		font-size: 0.88em;
+		color: var(--text-light);
+	}
+	.filter-empty {
+		font-style: italic;
+	}
+	.q-item[hidden],
+	.fail-card[hidden] {
+		display: none;
 	}
 	.fails-grid {
 		display: flex;
