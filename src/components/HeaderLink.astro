@@ -1,12 +1,16 @@
 ---
 import type { HTMLAttributes } from 'astro/types';
+import { stripLang } from '../i18n';
 
 type Props = HTMLAttributes<'a'>;
 
 const { href, class: className, ...props } = Astro.props;
-const pathname = Astro.url.pathname.replace(import.meta.env.BASE_URL, '');
-const subpath = pathname.match(/[^\/]+/g);
-const isActive = href === pathname || href === '/' + (subpath?.[0] || '');
+// Compare with the locale prefix removed, so /es/projects marks the same link
+// active that /projects does.
+const pathname = stripLang(Astro.url.pathname.replace(import.meta.env.BASE_URL, ''));
+const target = stripLang(String(href ?? '/'));
+const section = (p: string) => '/' + (p.match(/[^\/]+/g)?.[0] ?? '');
+const isActive = target === pathname || (target !== '/' && target === section(pathname));
 ---
 
 <a href={href} class:list={[className, { active: isActive }]} {...props}>

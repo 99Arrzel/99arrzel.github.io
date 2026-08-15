@@ -1,0 +1,82 @@
+---
+// The About page, in whichever locale it is handed. `src/pages/about.astro`
+// and `src/pages/es/about.astro` are one-line wrappers around this, so the two
+// versions can never drift in structure — only in copy.
+import BaseHead from '../BaseHead.astro';
+import Footer from '../Footer.astro';
+import Header from '../Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { about } from '../../i18n/about';
+import { localizePath, type Lang } from '../../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = about[lang];
+const cv = localizePath('/cv', lang);
+const withCv = (html: string) => html.replaceAll('{cv}', cv);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${c.metaTitle} | ${SITE_TITLE}`} description={c.metaDescription} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{c.title}</h1>
+
+			{c.introHtml.map((html) => <p set:html={html} />)}
+
+			<h2>{c.experienceTitle}</h2>
+			<ul class="experience">
+				{
+					c.jobs.map((job) => (
+						<li>
+							<strong>{job.role}</strong> &middot; {job.company} &middot; {job.place}
+							<span class="period">{job.period}</span>
+							<p set:html={job.bodyHtml} />
+						</li>
+					))
+				}
+			</ul>
+
+			<h2>{c.educationTitle}</h2>
+			<ul>
+				{c.educationHtml.map((html) => <li set:html={html} />)}
+			</ul>
+
+			<h2>{c.contactTitle}</h2>
+			{c.contactHtml.map((html) => <p set:html={withCv(html)} />)}
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.experience {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+	}
+	.experience > li {
+		padding: 1em 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.experience > li:last-child {
+		border-bottom: none;
+	}
+	.experience .period {
+		display: block;
+		color: var(--text-light);
+		font-size: 0.9em;
+		margin-top: 0.15em;
+	}
+	.experience p {
+		margin: 0.6em 0 0 0;
+		color: var(--text-light);
+	}
+</style>

@@ -1,0 +1,380 @@
+---
+import { Code } from 'astro:components';
+import BaseHead from '../BaseHead.astro';
+import Footer from '../Footer.astro';
+import Header from '../Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { interviews as copy } from '../../i18n/interviews';
+import type { Lang } from '../../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = copy[lang];
+
+// Derive the topic filter facets straight from the questions, so the chips and
+// their counts can never drift from the data. Insertion order is kept. Slugs
+// come from the translated topic names, so each locale gets its own — the
+// filter only ever runs against the page it was rendered into.
+const topicSlug = (s: string) =>
+	s
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, "")
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/(^-|-$)/g, '');
+const allQuestions = c.interviews.flatMap((iv) => iv.questions);
+const topicCounts = new Map<string, number>();
+for (const q of allQuestions) {
+	topicCounts.set(q.topic, (topicCounts.get(q.topic) ?? 0) + 1);
+}
+const topics = [...topicCounts].map(([name, count]) => ({ name, count, slug: topicSlug(name) }));
+const totalQuestions = allQuestions.length;
+const subFor = (n: number) =>
+	(n === 1 ? c.oneInterview.one : c.oneInterview.many).replace('{n}', String(n));
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${c.metaTitle} | ${SITE_TITLE}`} description={c.metaDescription} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{c.title}</h1>
+			<p class="fails-intro">
+				{c.intro}<em>{c.introEmphasis}</em>{c.introTail}
+			</p>
+			<div class="topic-filter" role="group" aria-label={c.filterAria}>
+				<button type="button" class="topic-chip is-active" data-topic="all" aria-pressed="true">
+					{c.all} <span class="chip-count">{totalQuestions}</span>
+				</button>
+				{topics.map((t) => (
+					<button type="button" class="topic-chip" data-topic={t.slug} aria-pressed="false">
+						{t.name} <span class="chip-count">{t.count}</span>
+					</button>
+				))}
+			</div>
+			<p
+				class="filter-status"
+				role="status"
+				aria-live="polite"
+				data-showing-one={c.showing.one}
+				data-showing-many={c.showing.many}
+				hidden
+			>
+			</p>
+			<p class="filter-empty" hidden>{c.empty}</p>
+			<div class="fails-grid">
+				{c.interviews.map((iv) => (
+					<article class="fail-card">
+						<header class="fail-head">
+							<span class="fail-meta">
+								<span class="fail-company">{iv.company}</span>
+								<span class="fail-role">{iv.role}</span>
+							</span>
+							<span class="fail-date">{iv.date}</span>
+						</header>
+						<p class="fail-sub">{iv.sub ? iv.sub : subFor(iv.questions.length)}</p>
+						<ol class="q-list">
+							{iv.questions.map((q, i) => (
+								<li class="q-item" data-topic={topicSlug(q.topic)}>
+									<p class="fail-q"><span class="q-label" aria-hidden="true">{i + 1}</span>{q.prompt}</p>
+									{q.slip && <p class="fail-slip"><strong>{c.slipLabel}</strong> {q.slip}</p>}
+									{q.heard && <p class="fail-slip"><strong>{c.heardLabel}</strong> {q.heard}</p>}
+									<div class="fail-answer">
+										<p class="answer-label">{q.heard ? c.heardAnswerLabel : c.answerLabel}</p>
+										<p>{q.answer}</p>
+										{q.snippet && <Code code={q.snippet} lang="js" theme="github-dark" />}
+									</div>
+									<div class="tag-row">
+										{q.tags.map((t) => <span class="tag">{t}</span>)}
+									</div>
+								</li>
+							))}
+						</ol>
+					</article>
+				))}
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<script>
+	// Progressive enhancement: with JS off, every question renders and the chips
+	// are simply inert. With JS on, the chips filter the questions by topic.
+	const chips = Array.from(document.querySelectorAll<HTMLButtonElement>('.topic-chip'));
+	const items = Array.from(document.querySelectorAll<HTMLLIElement>('.q-item'));
+	const cards = Array.from(document.querySelectorAll<HTMLElement>('.fail-card'));
+	const status = document.querySelector<HTMLParagraphElement>('.filter-status');
+	const empty = document.querySelector<HTMLParagraphElement>('.filter-empty');
+	// The sentence templates are rendered into the status element by the page, so
+	// this script stays locale-agnostic rather than carrying two copies of the
+	// English and Spanish plural forms.
+	const showingOne = status?.dataset.showingOne ?? 'Showing {n} question on {topic}.';
+	const showingMany = status?.dataset.showingMany ?? 'Showing {n} questions on {topic}.';
+
+	function topicLabel(slug: string) {
+		const chip = chips.find((c) => c.dataset.topic === slug);
+		return chip ? (chip.textContent ?? '').replace(/\s*\d+\s*$/, '').trim() : slug;
+	}
+
+	function apply(topic: string) {
+		let visible = 0;
+		for (const li of items) {
+			const show = topic === 'all' || li.dataset.topic === topic;
+			li.hidden = !show;
+			if (show) visible++;
+		}
+		// Hide cards left with no visible questions, and renumber the ones that
+		// remain so the circled labels always read 1, 2, 3… within each card.
+		for (const card of cards) {
+			let n = 0;
+			for (const li of card.querySelectorAll<HTMLLIElement>('.q-item')) {
+				if (li.hidden) continue;
+				n++;
+				const label = li.querySelector('.q-label');
+				if (label) label.textContent = String(n);
+			}
+			card.hidden = n === 0;
+		}
+		for (const c of chips) {
+			const on = c.dataset.topic === topic;
+			c.classList.toggle('is-active', on);
+			c.setAttribute('aria-pressed', String(on));
+		}
+		if (status) {
+			if (topic === 'all') {
+				status.hidden = true;
+			} else {
+				status.hidden = false;
+				status.textContent = (visible === 1 ? showingOne : showingMany)
+					.replace('{n}', String(visible))
+					.replace('{topic}', topicLabel(topic));
+			}
+		}
+		if (empty) empty.hidden = visible !== 0;
+		history.replaceState(null, '', topic === 'all' ? location.pathname : `#topic=${topic}`);
+	}
+
+	for (const c of chips) {
+		c.addEventListener('click', () => apply(c.dataset.topic ?? 'all'));
+	}
+
+	const fromHash = new URLSearchParams(location.hash.slice(1)).get('topic');
+	apply(fromHash && chips.some((c) => c.dataset.topic === fromHash) ? fromHash : 'all');
+</script>
+
+<style>
+	.fails-intro {
+		margin: -0.25em 0 1.5em 0;
+		max-width: 65ch;
+		color: var(--text-light);
+	}
+	.topic-filter {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em;
+		margin: 0 0 1.5em 0;
+	}
+	.topic-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+		padding: 0.4em 0.85em;
+		font: inherit;
+		font-size: 0.85em;
+		line-height: 1;
+		color: var(--text-light);
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			color 0.15s ease,
+			background 0.15s ease,
+			border-color 0.15s ease;
+	}
+	.topic-chip:hover {
+		color: var(--text);
+		border-color: var(--accent);
+	}
+	.topic-chip:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
+	}
+	.topic-chip.is-active {
+		color: var(--bg);
+		background: var(--accent);
+		border-color: var(--accent);
+		font-weight: 600;
+	}
+	.chip-count {
+		font-size: 0.85em;
+		opacity: 0.65;
+		font-variant-numeric: tabular-nums;
+	}
+	.topic-chip.is-active .chip-count {
+		opacity: 0.85;
+	}
+	.filter-status,
+	.filter-empty {
+		margin: -0.75em 0 1.5em 0;
+		font-size: 0.88em;
+		color: var(--text-light);
+	}
+	.filter-empty {
+		font-style: italic;
+	}
+	.q-item[hidden],
+	.fail-card[hidden] {
+		display: none;
+	}
+	.fails-grid {
+		display: flex;
+		flex-direction: column;
+		gap: 1.25em;
+	}
+	.fail-card {
+		padding: 1.5em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-left: 3px solid var(--accent);
+		border-radius: 8px;
+	}
+	.fail-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1em;
+		margin-bottom: 0.35em;
+	}
+	.fail-sub {
+		margin: 0 0 0.5em 0;
+		font-size: 0.82em;
+		color: var(--text-light);
+	}
+	.q-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.q-item {
+		padding-top: 1.5em;
+		margin-top: 1.5em;
+		border-top: 1px solid var(--border);
+	}
+	.q-item:first-child {
+		padding-top: 0.75em;
+		margin-top: 0;
+		border-top: none;
+	}
+	.fail-meta {
+		display: flex;
+		flex-direction: column;
+		gap: 0.15em;
+	}
+	.fail-company {
+		font-weight: 600;
+		color: var(--text-heading);
+		letter-spacing: 0.02em;
+	}
+	.fail-role {
+		font-size: 0.8em;
+		color: var(--text-light);
+	}
+	.fail-date {
+		font-size: 0.78em;
+		color: var(--text-light);
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		white-space: nowrap;
+	}
+	.fail-q {
+		display: flex;
+		gap: 0.6em;
+		align-items: flex-start;
+		margin: 0 0 0.85em 0;
+		font-size: 1.05em;
+		font-weight: 500;
+		color: var(--text-heading);
+	}
+	.q-label {
+		flex: none;
+		width: 1.6em;
+		height: 1.6em;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50%;
+		background: var(--accent);
+		color: var(--bg);
+		font-size: 0.75em;
+		font-weight: 700;
+	}
+	.fail-slip {
+		margin: 0 0 1em 0;
+		color: var(--text-light);
+		font-size: 0.93em;
+		line-height: 1.55;
+	}
+	.fail-slip strong {
+		color: var(--text);
+	}
+	.fail-answer {
+		padding: 1em 1.25em;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		margin-bottom: 1em;
+	}
+	.answer-label {
+		margin: 0 0 0.5em 0;
+		font-size: 0.72em;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--accent);
+	}
+	.fail-answer p:not(.answer-label) {
+		margin: 0;
+		color: var(--text-light);
+		font-size: 0.93em;
+		line-height: 1.6;
+	}
+	/* Shiki-highlighted block from the <Code> component. The global `pre` rule
+	   forces its own background with !important, so override it here to let the
+	   github-dark theme background through and keep the block on-brand. */
+	.fail-answer :global(pre.astro-code) {
+		margin: 1em 0 0 0;
+		padding: 1em 1.25em;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		font-size: 0.84em;
+		line-height: 1.55;
+		overflow-x: auto;
+		background-color: #0d1117 !important;
+	}
+	.tag-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4em;
+	}
+	.tag {
+		padding: 0.2em 0.6em;
+		background: var(--bg);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		font-size: 0.78em;
+		color: var(--accent);
+	}
+	@media (max-width: 720px) {
+		.fail-head {
+			flex-direction: column;
+			gap: 0.25em;
+		}
+	}
+</style>

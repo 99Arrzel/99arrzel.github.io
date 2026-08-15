@@ -1,0 +1,242 @@
+---
+import BaseHead from '../BaseHead.astro';
+import Footer from '../Footer.astro';
+import Header from '../Header.astro';
+import { SITE_TITLE } from '../../consts';
+import '../../styles/cv.css';
+import { SHEET_CSS } from '../../scripts/cv/sheet-css';
+import { TEMPLATES } from '../../scripts/cv/types';
+import { cvPage } from '../../i18n/cv-page';
+import type { Lang } from '../../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = cvPage[lang];
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${c.metaTitle} — ${SITE_TITLE}`} description={c.metaDescription} />
+		<!-- The paper stylesheet. This exact text is copied into the print iframe,
+		     so the preview and the PDF can never drift apart. -->
+		<style is:inline id="sheet-css" set:html={SHEET_CSS}></style>
+	</head>
+	<body>
+		<Header />
+		<main class="cv-app" id="cv-app">
+			<header class="cv-intro">
+				<h1>{c.title}</h1>
+				<p class="cv-lede">{c.lede}</p>
+				<p class="cv-privacy" set:html={c.privacyHtml} />
+			</header>
+
+			<p class="share-banner" id="share-banner" role="status" hidden></p>
+
+			<div class="cv-bar">
+				<label class="bar-f">
+					<span class="bar-lbl">{c.docLabel}</span>
+					<select id="doc-select" aria-label={c.docSwitchAria}></select>
+				</label>
+				<label class="bar-f bar-grow">
+					<span class="bar-lbl">{c.nameLabel}</span>
+					<input type="text" id="doc-name" aria-label={c.renameAria} />
+				</label>
+				<div class="bar-btns">
+					<button type="button" id="doc-new">{c.docNew}</button>
+					<button type="button" id="doc-dup">{c.docDup}</button>
+					<button type="button" id="doc-del">{c.docDel}</button>
+					<button type="button" id="import-btn">{c.importMd}</button>
+					<button type="button" id="export-btn">{c.exportMd}</button>
+					<input type="file" id="import-input" accept=".md,.markdown,text/markdown,text/plain" hidden />
+				</div>
+				<p class="save-state" id="save-state" data-state="ok" role="status">{c.savedState}</p>
+			</div>
+
+			<div class="cv-split">
+				<section class="cv-editor" aria-label={c.editorAria}>
+					<nav class="tabs" role="tablist">
+						<button type="button" class="tab is-on" data-tab="markdown" role="tab" aria-selected="true">{c.tabMarkdown}</button>
+						<button type="button" class="tab" data-tab="form" role="tab" aria-selected="false">{c.tabForm}</button>
+						<button type="button" class="tab" data-tab="ats" role="tab" aria-selected="false">
+							{c.tabXray}<span class="issue-count" id="issue-count" hidden></span>
+						</button>
+						<a class="tab tab-jump" href="#preview">{c.tabPreview}</a>
+					</nav>
+
+					<div class="pane" data-pane="markdown">
+						<p class="pane-note">{c.paneNote}</p>
+						<button type="button" class="assist-btn" id="prompt-open">
+							<span aria-hidden="true">✨</span> {c.assistBtn}
+						</button>
+						<textarea id="md-input" spellcheck="false" aria-label={c.mdAria}></textarea>
+						<details class="pane-help">
+							<summary>{c.formatSummary}</summary>
+							<ul>
+								{c.formatRulesHtml.map((html) => <li set:html={html} />)}
+							</ul>
+						</details>
+					</div>
+
+					<div class="pane" data-pane="form" hidden>
+						<div id="form-root"></div>
+					</div>
+
+					<div class="pane" data-pane="ats" hidden>
+						<p class="pane-note" id="ats-meta"></p>
+						<pre class="ats-text" id="ats-text"></pre>
+						<h2 class="ats-h">{c.xrayHeading}</h2>
+						<div id="ats-issues"></div>
+					</div>
+				</section>
+
+				<section class="cv-paper" aria-label={c.previewAria}>
+					<div class="paper-bar">
+						<div class="tpl-picker" id="tpl-picker" role="group" aria-label={c.templateAria}>
+							{
+								TEMPLATES.map((t) => (
+									<button type="button" data-tpl={t.id} aria-pressed={t.id === 'ledger'} class={t.id === 'ledger' ? 'is-on' : ''}>
+										<b>{c.templates[t.id].name}</b>
+										<span>{c.templates[t.id].blurb}</span>
+										<em data-risk={t.risk}>{c.parseRisk}: {c.risk[t.risk]}</em>
+									</button>
+								))
+							}
+						</div>
+						<div class="paper-opts">
+							<label class="bar-f">
+								<span class="bar-lbl">{c.pageLabel}</span>
+								<select id="page-select">
+									<option value="A4">A4</option>
+									<option value="Letter">Letter</option>
+								</select>
+							</label>
+							<label class="bar-f">
+								<span class="bar-lbl">{c.densityLabel}</span>
+								<select id="density-select">
+									<option value="tight">{c.density.tight}</option>
+									<option value="normal">{c.density.normal}</option>
+									<option value="airy">{c.density.airy}</option>
+								</select>
+							</label>
+							<label class="bar-f">
+								<span class="bar-lbl">{c.accentLabel}</span>
+								<input type="color" id="accent-input" value="#2f62c8" />
+							</label>
+							<p class="pagecount" id="pagecount"></p>
+							<button type="button" class="print-btn" id="print-btn">{c.printBtn}</button>
+						</div>
+
+						<div class="qr-bar">
+							<label class="fm-check qr-toggle">
+								<input type="checkbox" id="qr-on" /> {c.qrOn}
+							</label>
+							<label class="bar-f qr-size-f">
+								<span class="bar-lbl">{c.qrSize} <output id="qr-size-out">58 mm</output></span>
+								<input type="range" id="qr-size" min="15" max="95" step="1" value="58" />
+							</label>
+							<label class="fm-check"><input type="checkbox" id="qr-every" /> {c.qrEvery}</label>
+							<label class="fm-check" title={c.qrHashTitle}>
+								<input type="checkbox" id="qr-hash" /> {c.qrHash}
+							</label>
+							<button type="button" id="copy-link">{c.copyLink}</button>
+							<button type="button" id="qr-shorten">{c.shorten}</button>
+							<button type="button" id="qr-unshorten" hidden>{c.unshorten}</button>
+						</div>
+						<p class="qr-readout" id="qr-readout" data-level="off">{c.qrOff}</p>
+						<p class="qr-readout" id="qr-short-state" hidden></p>
+					</div>
+
+					<aside class="tips" id="tips" hidden>
+						<p><strong>{c.tipsTitle}</strong></p>
+						<ol>
+							{c.tipsHtml.map((html) => <li set:html={html} />)}
+						</ol>
+						<p class="tips-sub">{c.tipsSub}</p>
+						<button type="button" id="tips-dismiss">{c.tipsDismiss}</button>
+					</aside>
+
+					<div class="preview" id="preview">
+						<div class="sheet-fit" id="sheet-fit">
+							<div class="sheet-shell" id="sheet-shell"></div>
+						</div>
+					</div>
+				</section>
+			</div>
+			<!-- Native <dialog>: gives us Esc-to-close, a focus trap and a backdrop
+			     without writing any of it. -->
+			<dialog class="modal" id="prompt-modal" aria-labelledby="prompt-title">
+				<div class="modal-head">
+					<div>
+						<h2 id="prompt-title">{c.modal.title}</h2>
+						<p class="modal-lede">{c.modal.lede}</p>
+					</div>
+					<button type="button" class="modal-x" id="prompt-close" aria-label={c.modal.close}>✕</button>
+				</div>
+
+				<ol class="steps">
+					<li class="step">
+						<span class="step-n" aria-hidden="true">1</span>
+						<div class="step-body">
+							<h3>{c.modal.step1Title}</h3>
+							<p>{c.modal.step1Body}</p>
+							<textarea
+								id="prompt-source"
+								rows="6"
+								spellcheck="false"
+								placeholder={c.modal.step1Placeholder}></textarea>
+							<p class="step-hint">{c.modal.step1Hint}</p>
+						</div>
+					</li>
+
+					<li class="step">
+						<span class="step-n" aria-hidden="true">2</span>
+						<div class="step-body">
+							<h3>{c.modal.step2Title}</h3>
+							<p>{c.modal.step2Body}</p>
+							<div class="prompt-box"><pre id="prompt-preview"></pre></div>
+							<button type="button" class="assist-primary" id="prompt-copy">{c.modal.step2Btn}</button>
+							<p class="step-hint" id="prompt-copy-hint"></p>
+						</div>
+					</li>
+
+					<li class="step">
+						<span class="step-n" aria-hidden="true">3</span>
+						<div class="step-body">
+							<h3>{c.modal.step3Title}</h3>
+							<p set:html={c.modal.step3BodyHtml} />
+							<div class="step-links">
+								<a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer">{c.modal.openChatGpt}</a>
+								<a href="https://claude.ai" target="_blank" rel="noopener noreferrer">{c.modal.openClaude}</a>
+							</div>
+						</div>
+					</li>
+
+					<li class="step">
+						<span class="step-n" aria-hidden="true">4</span>
+						<div class="step-body">
+							<h3>{c.modal.step4Title}</h3>
+							<p set:html={c.modal.step4BodyHtml} />
+							<textarea
+								id="prompt-result"
+								rows="5"
+								spellcheck="false"
+								placeholder={c.modal.step4Placeholder}></textarea>
+							<button type="button" class="assist-primary" id="prompt-apply">{c.modal.step4Btn}</button>
+							<p class="step-hint" id="prompt-apply-hint">{c.modal.step4Hint}</p>
+						</div>
+					</li>
+				</ol>
+			</dialog>
+		</main>
+		<Footer />
+
+		<script>
+			import { boot } from '../../scripts/cv/app';
+			boot();
+		</script>
+	</body>
+</html>

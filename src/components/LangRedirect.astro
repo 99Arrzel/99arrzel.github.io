@@ -1,0 +1,38 @@
+---
+// First-visit language detection.
+//
+// Only ever rendered on the English (unprefixed) pages: those are the site's
+// unmarked entry point, so sending a Spanish-speaking first-time visitor to
+// /es/ is a helpful guess. A /es/ URL, by contrast, is an explicit request —
+// it is never redirected, which is also what keeps the two from ping-ponging.
+//
+// A stored choice always wins, so clicking EN in the switcher sticks even when
+// the browser is set to Spanish.
+import { alternates } from '../i18n';
+
+// Null on a page with no Spanish counterpart. Bouncing a reader off the article
+// they asked for and onto a section index would be worse than leaving them on
+// the English page they can actually read, so those pages get no script at all.
+const esPath = alternates(Astro.url)?.es ?? null;
+---
+
+{
+	esPath && (
+		<script is:inline define:vars={{ esPath }}>
+			(function () {
+				var stored = null;
+				try {
+					stored = localStorage.getItem('lang');
+				} catch (e) {
+					/* private mode: fall through to sniffing the browser */
+				}
+				if (stored === 'en') return;
+				var wantsEs = stored === 'es' || (navigator.language || '').toLowerCase().indexOf('es') === 0;
+				if (!wantsEs) return;
+				// replace(), not assign(): a redirect the visitor never asked for
+				// should not sit in their history and trap the back button.
+				location.replace(esPath + location.search + location.hash);
+			})();
+		</script>
+	)
+}

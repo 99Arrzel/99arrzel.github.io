@@ -1,0 +1,185 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../BaseHead.astro';
+import Footer from '../Footer.astro';
+import FormattedDate from '../FormattedDate.astro';
+import Header from '../Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { VAULT_TOPICS } from '../../vault';
+import { vault, topicOrder } from '../../i18n/vault';
+import type { Lang } from '../../i18n';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = vault[lang];
+
+const entries = (await getCollection('vault', ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+
+// Group entries by topic, keeping only topics that actually have something.
+// Entry links stay on the unprefixed /vault/ paths in both locales: the posts
+// themselves are only written once.
+const topics = topicOrder
+	.map((id) => ({
+		id,
+		icon: VAULT_TOPICS[id].icon,
+		name: c.topics[id].name,
+		blurb: c.topics[id].blurb,
+		entries: entries.filter((e) => e.data.topic === id),
+	}))
+	.filter((t) => t.entries.length > 0);
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${c.metaTitle} | ${SITE_TITLE}`} description={c.metaDescription} />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>{c.title}</h1>
+			<p class="vault-intro">{c.intro}</p>
+
+			{entries.length === 0 ? (
+				<p class="empty">{c.empty}</p>
+			) : (
+				<>
+					{c.languageNote && <p class="lang-note">{c.languageNote}</p>}
+					<nav class="topic-nav" aria-label={c.navAria}>
+						{topics.map((t) => (
+							<a class="topic-chip" href={`#${t.id}`}>
+								<span aria-hidden="true">{t.icon}</span> {t.name}
+								<span class="count">{t.entries.length}</span>
+							</a>
+						))}
+					</nav>
+
+					{topics.map((t) => (
+						<section class="topic" id={t.id}>
+							<header class="topic-head">
+								<h2><span aria-hidden="true">{t.icon}</span> {t.name}</h2>
+								<p>{t.blurb}</p>
+							</header>
+							<ul class="entry-list">
+								{t.entries.map((e) => (
+									<li>
+										<a href={`/vault/${e.id}/`}>
+											<h3 class="entry-title">{e.data.title}</h3>
+											<p class="entry-date"><FormattedDate date={e.data.pubDate} /></p>
+											{e.data.description && <p class="entry-desc">{e.data.description}</p>}
+										</a>
+									</li>
+								))}
+							</ul>
+						</section>
+					))}
+				</>
+			)}
+		</main>
+		<Footer />
+	</body>
+</html>
+
+<style>
+	.vault-intro {
+		margin: -0.25em 0 1.75em 0;
+		max-width: 65ch;
+		color: var(--text-light);
+	}
+	.lang-note {
+		margin: -1.25em 0 1.75em 0;
+		font-size: 0.85em;
+		font-style: italic;
+		color: var(--text-light);
+	}
+	.empty {
+		color: var(--text-light);
+	}
+	.topic-nav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5em;
+		margin-bottom: 2.5em;
+	}
+	.topic-chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4em;
+		padding: 0.3em 0.75em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		color: var(--text);
+		text-decoration: none;
+		font-size: 0.85em;
+		transition: border-color 0.2s ease, color 0.2s ease;
+	}
+	.topic-chip:hover {
+		border-color: var(--accent);
+		color: var(--accent);
+	}
+	.topic-chip .count {
+		color: var(--text-light);
+		font-size: 0.85em;
+		font-variant-numeric: tabular-nums;
+	}
+	.topic {
+		margin-bottom: 2.5em;
+		/* Land below the fixed header when jumped to via #anchor. */
+		scroll-margin-top: calc(var(--header-height) + 1em);
+	}
+	.topic-head {
+		margin-bottom: 1em;
+		padding-bottom: 0.5em;
+		border-bottom: 1px solid var(--border);
+	}
+	.topic-head h2 {
+		margin: 0;
+		font-size: 1.5em;
+	}
+	.topic-head p {
+		margin: 0.35em 0 0 0;
+		color: var(--text-light);
+		font-size: 0.92em;
+	}
+	.entry-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
+	}
+	.entry-list a {
+		display: block;
+		padding: 1.2em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		text-decoration: none;
+		transition: border-color 0.2s ease;
+	}
+	.entry-list a:hover {
+		border-color: var(--accent);
+	}
+	.entry-title {
+		margin: 0;
+		color: var(--text-heading);
+		font-size: 1.2em;
+	}
+	.entry-date {
+		margin: 0.25em 0 0 0;
+		color: var(--text-light);
+		font-size: 0.85em;
+	}
+	.entry-desc {
+		margin: 0.5em 0 0 0;
+		color: var(--text);
+		font-size: 0.92em;
+	}
+</style>

@@ -1,12 +1,17 @@
 ---
+import { getLangFromUrl } from '../i18n';
+import { useTranslations } from '../i18n/ui';
+
 const today = new Date();
+const lang = getLangFromUrl(Astro.url);
+const t = useTranslations(lang);
 ---
 
 <footer>
-	&copy; {today.getFullYear()} Andres Carrillo. In case you haven't noticed, Claude made this.
+	&copy; {today.getFullYear()} Andres Carrillo. {t('footer.credit')}
 	<div class="social-links">
 		<a href="https://github.com/99arrzel" target="_blank">
-			<span class="sr-only">GitHub</span>
+			<span class="sr-only">{t('nav.github')}</span>
 			<svg viewBox="0 0 16 16" aria-hidden="true" width="32" height="32"
 				><path
 					fill="currentColor"

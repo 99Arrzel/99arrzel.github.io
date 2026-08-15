@@ -1,0 +1,74 @@
+---
+// Two-letter locale toggle. Each half is a real link to the same page in the
+// other language, so it works with JS off and can be opened in a new tab; the
+// click handler only records the preference so the auto-detect redirect on the
+// English pages stops overriding a deliberate choice.
+import { getLangFromUrl, languages, switchTargets } from '../i18n';
+
+const lang = getLangFromUrl(Astro.url);
+// Not `alternates()`: on a page that exists in one language only — a Vault
+// entry, a blog post — this falls back to the nearest page that does exist, so
+// the toggle never offers a URL that was never built.
+const alt = switchTargets(Astro.url);
+---
+
+<div class="lang-switch" role="group" aria-label="Language">
+	<a
+		href={alt.en}
+		hreflang="en"
+		data-lang-pick="en"
+		class:list={{ on: lang === 'en' }}
+		aria-current={lang === 'en' ? 'true' : undefined}
+		title={languages.en}>EN</a
+	>
+	<a
+		href={alt.es}
+		hreflang="es"
+		data-lang-pick="es"
+		class:list={{ on: lang === 'es' }}
+		aria-current={lang === 'es' ? 'true' : undefined}
+		title={languages.es}>ES</a
+	>
+</div>
+
+<script is:inline>
+	// Remember the click before the browser navigates away.
+	document.addEventListener('click', function (e) {
+		var a = e.target instanceof Element ? e.target.closest('[data-lang-pick]') : null;
+		if (!a) return;
+		try {
+			localStorage.setItem('lang', a.getAttribute('data-lang-pick'));
+		} catch (err) {
+			/* private mode — the link still navigates */
+		}
+	});
+</script>
+
+<style>
+	.lang-switch {
+		display: inline-flex;
+		align-items: center;
+		flex: none;
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		overflow: hidden;
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.lang-switch a {
+		padding: 0.15em 0.5em;
+		font-size: 0.72em;
+		letter-spacing: 0.06em;
+		font-weight: 600;
+		color: var(--text-light);
+		text-decoration: none;
+		border-bottom: none;
+		line-height: 1.6;
+	}
+	.lang-switch a:hover {
+		color: var(--text);
+	}
+	.lang-switch a.on {
+		background: var(--accent);
+		color: #0d1117;
+	}
+</style>
