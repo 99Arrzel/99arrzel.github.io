@@ -2,13 +2,11 @@
 import { getLangFromUrl } from '../i18n';
 import { useTranslations } from '../i18n/ui';
 
-const today = new Date();
 const lang = getLangFromUrl(Astro.url);
 const t = useTranslations(lang);
 ---
 
 <footer>
-	&copy; {today.getFullYear()} Andres Carrillo. {t('footer.credit')}
 	<div class="social-links">
 		<a href="https://github.com/99arrzel" target="_blank">
 			<span class="sr-only">{t('nav.github')}</span>
@@ -33,7 +31,6 @@ const t = useTranslations(lang);
 		display: flex;
 		justify-content: center;
 		gap: 1em;
-		margin-top: 1em;
 	}
 	.social-links a {
 		text-decoration: none;

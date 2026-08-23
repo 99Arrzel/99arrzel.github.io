@@ -2,7 +2,7 @@
 //
 // Page bodies keep their own modules (`home.ts`, `about.ts`, …) because they
 // carry paragraphs rather than labels, and mixing the two makes both harder to
-// scan. Anything here is a nav item, a footer line, or metadata.
+// scan. Anything here is a nav item or metadata.
 
 import type { Lang } from './index';
 
@@ -17,8 +17,6 @@ export const ui = {
 
 		'lang.label': 'Language',
 		'lang.switchTo': 'Ver en español',
-
-		'footer.credit': 'In case you haven’t noticed, Claude made this.',
 
 		'site.description':
 			'Full-stack engineer in Buenos Aires. I build production SaaS and automate annoying things.',
@@ -35,8 +33,6 @@ export const ui = {
 
 		'lang.label': 'Idioma',
 		'lang.switchTo': 'View in English',
-
-		'footer.credit': 'Por si no se nota, esto lo hizo Claude.',
 
 		'site.description':
 			'Ingeniero full-stack en Buenos Aires. Construyo SaaS en producción y automatizo cosas molestas.',
