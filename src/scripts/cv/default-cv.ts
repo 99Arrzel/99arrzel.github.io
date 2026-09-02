@@ -2,108 +2,104 @@
 // tool self-demonstrating: every feature is visible against real content
 // instead of lorem, and "clear and start yours" is one button away.
 
-// My GitHub avatar, centre-cropped to 440px and re-encoded (~15 KB). Inlined
-// rather than fetched: the page promises that nothing leaves your tab, and a
-// remote image would both break that and risk printing as a blank square.
-const DEFAULT_PHOTO =
-	'data:image/jpeg;base64,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';
-
 export const DEFAULT_CV = `---
 name: Andrés Carrillo Zelada
-title: Full-Stack Engineer · Next.js / TypeScript / AWS
+title: Full-Stack Agentic Engineer · Next.js / TypeScript / AWS
 location: Buenos Aires, Argentina
 email: af.carrillo@live.com
 links:
   - linkedin.com/in/99arrzel
   - github.com/99Arrzel
-extra: Spanish (Native) · English C1 — EF SET (vJtcNY) · Open to remote globally · On-site/Hybrid: Buenos Aires or Santa Cruz, Bolivia
-photo: ${DEFAULT_PHOTO}
-template: ledger
+extra: Spanish (native) · English C1 — EF SET · Open to remote globally
+template: broadsheet
 page: Letter
-density: normal
+density: tight
 accent: #2f62c8
-photoShape: circle
 rail:
   - Technical Skills
   - Education
-  - Certifications
 ---
 
 ## Professional Summary
 
-Full-stack engineer with 3+ years building production web apps end-to-end. Currently at PostReminder, where I migrated a legacy PHP system to a Next.js 16 / React 19 / TypeScript monorepo, designed CI/CD on AWS ECS via CloudFormation, owned database schema and migrations on MySQL/Prisma, and shipped Stripe-based subscriptions with RBAC and plan-based entitlements. I work comfortably across the stack — frontend, backend, infrastructure, and payments/auth — and run multi-agent LLM workflows (isolated worktrees, automated review) to ship faster without losing rigor.
+Full-stack engineer with 3+ years shipping production web apps end-to-end, working on contract for US SaaS teams. Most recently SDET at FloQast, where I built a declarative database seeder that unblocked more than 1,000 Playwright and Selenium end-to-end tests. At PostReminder I migrated a legacy PHP product to a Next.js 16 / React 19 / TypeScript monorepo, own the AWS ECS deployment pipeline, and built Stripe subscriptions behind RBAC and plan-based entitlements. I work across frontend, backend, infrastructure and test tooling, and run agentic LLM workflows that lifted my delivery throughput roughly fivefold.
 
 ## Technical Skills
 
-**Languages:** TypeScript, JavaScript, PHP, Python, Rust
-**Frontend:** React, Next.js, Vue.js, Tailwind CSS, HTML5, CSS3
-**Backend:** Node.js, Laravel, Spring Boot (intro), REST APIs
-**Databases:** MySQL, PostgreSQL, Prisma ORM, Relational Database Design
-**Infrastructure / DevOps:** AWS (ECS, ECR, CloudFormation), GitHub Actions, CI/CD, Docker, Bun, Turborepo
-**Payments / Auth:** Stripe (subscriptions, webhooks, proration), RBAC, plan-based entitlements
-**E-commerce / CMS:** BigCommerce, Prismic
-**Tooling / Workflow:** Git, Teamwork, LLM-augmented engineering (multi-agent worktrees, automated review)
+**Languages:** TypeScript, JavaScript, PHP, Python
+**Frontend:** React, Next.js, Vue, Zustand, Tailwind CSS
+**Backend & Data:** Node.js, Laravel, REST APIs, Prisma, MySQL, PostgreSQL, MongoDB
+**Testing:** Playwright, Selenium, quality engineering (QE), end-to-end test infrastructure, declarative test-data seeding, Harness feature flags
+**Infrastructure:** AWS (ECS, ECR, CloudFormation), GitHub Actions, Docker, Turborepo
+**Payments / Auth:** Stripe, RBAC, plan-based entitlements
+**Workflow:** Git, agentic engineering (multi-agent LLM workflows, parallel agents, automated review), headless commerce (BigCommerce), CMS integration (Prismic)
 
 ## Experience
 
-### Full Stack Engineer @ PostReminder — Remote · San Francisco, CA, USA
+### SDET (Software Developer in Test) @ FloQast — Close QE team · Contract · Remote
+Jun 2026 – Oct 2026
+
+- Designed and built a declarative database seeder from a JSON specification, deriving its collections and shapes from the existing codebase.
+- Provisioned the accounts, credentials and surrounding data that let more than 1,000 end-to-end tests run against a live dev environment.
+- Made the Playwright and legacy Selenium suites run across separate accounts, with the seeder standing up MongoDB records, cloud storage providers (Dropbox, Box) and Harness feature flags for each.
+- Drove the suites to green across multiple environments, diagnosing and raising environment-specific failures, and documented the seeder for the wider team — built throughout with agentic LLM workflows.
+
+### Agentic AI Engineer (Full Stack Engineer) @ PostReminder — Contract · Remote · San Francisco, CA, USA
 Jul 2025 – Present
 
-- Migrated a legacy PHP product to a modern Next.js 16 / React 19 / TypeScript monorepo (Turborepo + Bun workspaces), unblocking faster feature delivery and a unified type system across web, API, and shared packages.
-- Designed and own the AWS deployment pipeline: GitHub Actions → ECR → ECS via CloudFormation, including scheduled ECS cron tasks, environment promotion, and rollback workflows.
-- Own database design and performance on MySQL/Prisma — schema-first migrations, idempotent DDL, and a custom TypeScript data-migration runner for safe, resumable backfills in production.
-- Built a two-layer authorization system combining RBAC (roles + granular permissions) with a plan-based entitlements layer for feature gating, per-workspace overrides, and Stripe-driven subscription sync (checkout, proration, webhooks).
-- Shipped end-to-end product features from PO designs — light/dark theming, drag-and-drop, virtualized rendering for high-volume lists — and orchestrated parallel LLM agents to materially increase throughput.
-- Authored security and compliance documentation, policies, and procedures for the team.
+- Designed and run the team's agentic development workflow — parallel LLM agents in isolated git worktrees behind automated review gates.
+- Monthly merged PRs rose from ~18 to ~100 after adopting it in March 2026 — 770 merges in total, the largest share on a six-engineer team.
+- Migrated a legacy PHP product to a Next.js 16 / React 19 / TypeScript monorepo (Turborepo + Bun workspaces), unifying the type system across web, API and shared packages.
+- Own the AWS pipeline end to end: GitHub Actions → ECR → ECS via CloudFormation, including scheduled ECS tasks, environment promotion and rollback.
+- Own database design on MySQL/Prisma — schema-first migrations, idempotent DDL, and a custom TypeScript runner for safe, resumable production backfills.
+- Built two-layer authorization — RBAC plus a plan-based entitlements layer — with Stripe checkout, proration and webhook-driven subscription sync.
 
-### Frontend Web Developer @ Alvind — Hybrid · Santa Cruz, Bolivia · Part-time
+### Frontend Web Developer @ Apotheca — Contract · Remote · Part-time from Jul 2025
 May 2025 – Feb 2026
 
-- Maintained and shipped features for an e-commerce storefront on Next.js, integrated with BigCommerce for catalog/checkout and Prismic for headless content.
-- Improved storefront performance and reliability across product, cart, and checkout flows; collaborated with content editors to streamline the authoring experience in Prismic.
-- Coordinated delivery and project tracking through Teamwork, partnering with designers and stakeholders to translate requirements into shippable frontend work.
+- Managed and maintained the Next.js server behind a headless BigCommerce storefront.
+- Modelled and integrated Prismic content types, moving a large share of the page into data fetching and cutting roughly 1 MB from page weight.
+- Rebuilt the cart flow, replacing a large in-context implementation with a Zustand store.
+- Tuned storefront UI against UX requirements and shipped continuous fixes across the site.
 
-### Full Stack Engineer @ Gometrixs — On-site · Santa Cruz de la Sierra, Bolivia
+### Full Stack Engineer @ Gometrixs — On-site · Santa Cruz, Bolivia
 Jun 2024 – Apr 2025
 
-- Tech-led Trippin, a new product at Gometrixs (spun out of Viacon), owning architecture decisions and end-to-end delivery across frontend and backend.
-- Coordinated a small engineering team — defined coding standards, ran code reviews, and onboarded new contributors.
-- Translated product requirements into a working stack and shipping cadence, balancing speed with maintainability for a greenfield codebase.
+- Led development of Trippin, a greenfield property management system (PMS), owning architecture and end-to-end delivery.
+- Coordinated a small engineering team — defined coding standards, ran code reviews and onboarded new contributors.
+- Built HR integrations managing the company's people directory and employee profiles.
+- Worked across the company ERP, fixing accounting systems and reporting.
+- Migrated the codebase from JavaScript to TypeScript.
 
 ### Full Stack Engineer @ Viacon Tours — On-site · Santa Cruz, Bolivia
 Sep 2023 – Apr 2024
 
-- Built and maintained internal tools and customer-facing features for a tour operator using PHP, React, and MySQL.
-- Introduced engineering standards (code review process, conventions) and mentored peers on best practices.
-- Gained hands-on production experience with AWS, Next.js, and Laravel as the team modernized parts of the stack.
+- Helped build the company's internal ERP on a Laravel microservice architecture, contributing to its migration from JavaScript to TypeScript and from PHP 7 to PHP 8.
+- Built internal tools and customer-facing features in PHP, React and MySQL.
+- Introduced engineering standards — code review process and conventions — and mentored peers.
 
 ### Full Stack Engineer @ Freelance — Remote
 Feb 2023 – Jul 2023
 
-- Built full-stack projects in Laravel + Vue for various clients; first hands-on exposure to Spring Boot architecture.
+- Built full-stack projects in Laravel and Vue for a range of clients.
 
 ## Education
 
-### Systems Engineering @ Universidad Franz Tamayo — Completed all coursework (degree pending thesis)
+### Systems Engineering @ Universidad Franz Tamayo — Coursework complete, thesis pending
 2020 – 2024
 
-### Computer Science, Exactas @ University of Buenos Aires (UBA)
+### Computer Science @ University of Buenos Aires (UBA)
 2018 – 2019
-
-## Certifications
-
-- JavaScript Algorithms and Data Structures — freeCodeCamp (Jul 2023)
-- EF SET Certificate for English C1 — EF Language Abroad (Jul 2023, Credential ID vJtcNY)
 
 ## Projects
 
-### Prusa Slicer Web API @ Rust, Tokio — github.com/99Arrzel/Prusa-Slicer-Web-Api
+### Remote Claude @ TypeScript, PWA — github.com/99Arrzel/remote-claude
 
-An API exposing filament usage and estimated print time data from Prusa Slicer.
+Self-hosted PWA for driving interactive Claude Code terminal sessions from any device.
 
-### Poor Man's System Attendance Control (PMSAC2) @ Next.js, Python, CompreFace — github.com/99Arrzel/PMSAC2
+### BCP Bolivia QR Payments @ Python, ADB — github.com/99Arrzel/BCP-ADB-BOLIVIA
 
-An attendance system using facial recognition.
+Generates bank payment QRs by automating the Android app over ADB, for a bank with no public API.
 `;
 
 /** Seed for "Start a blank CV". */
@@ -116,7 +112,7 @@ links:
   - github.com/you
 template: ledger
 page: A4
-density: normal
+density: tight
 accent: #2f62c8
 ---
 
