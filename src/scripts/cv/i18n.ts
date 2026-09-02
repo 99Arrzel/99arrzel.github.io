@@ -156,7 +156,6 @@ const EN = {
 
 		untitledDoc: 'Untitled CV',
 		copySuffix: (name: string) => `${name} copy`,
-		importedDoc: 'Imported CV',
 		onlyDoc: 'This is your only document. Create another one before deleting this.',
 		confirmDelete: (name: string) => `Delete "${name}"? This cannot be undone.`,
 
@@ -525,7 +524,6 @@ const ES: Strings = {
 
 		untitledDoc: 'CV sin título',
 		copySuffix: (name: string) => `${name} (copia)`,
-		importedDoc: 'CV importado',
 		onlyDoc: 'Este es tu único documento. Creá otro antes de borrar este.',
 		confirmDelete: (name: string) => `¿Eliminar "${name}"? Esto no se puede deshacer.`,
 

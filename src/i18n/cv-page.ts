@@ -22,8 +22,6 @@ type CvPageCopy = {
 	docNew: string;
 	docDup: string;
 	docDel: string;
-	importMd: string;
-	exportMd: string;
 	savedState: string;
 
 	editorAria: string;
@@ -97,7 +95,7 @@ export const cvPage: Record<Lang, CvPageCopy> = {
 		title: 'CV Press',
 		lede: 'Fill in the form, pick a template, print to PDF. The output has a real text layer — selectable, searchable, and readable by the systems that index your application.',
 		privacyHtml: `<strong>Nothing leaves this tab</strong> — no server, no upload, no account. Your CV is saved in
-			this browser's local storage and nowhere else, so export it to a file if you want a backup.
+			this browser's local storage and nowhere else — clearing your browser data clears it too.
 			The single exception is the <em>Shorten via TinyURL</em> button, which asks first and says
 			exactly what it sends.`,
 
@@ -108,8 +106,6 @@ export const cvPage: Record<Lang, CvPageCopy> = {
 		docNew: 'New',
 		docDup: 'Duplicate',
 		docDel: 'Delete',
-		importMd: 'Import .md',
-		exportMd: 'Export .md',
 		savedState: 'Saved in this browser',
 
 		editorAria: 'Editor',
@@ -203,8 +199,8 @@ export const cvPage: Record<Lang, CvPageCopy> = {
 		title: 'CV Press',
 		lede: 'Completá el formulario, elegí una plantilla, imprimí a PDF. El resultado tiene una capa de texto real: seleccionable, buscable y legible por los sistemas que indexan tu postulación.',
 		privacyHtml: `<strong>Nada sale de esta pestaña</strong> — sin servidor, sin subidas, sin cuenta. Tu CV se guarda en
-			el almacenamiento local de este navegador y en ningún otro lado, así que exportalo a un archivo
-			si querés un respaldo. La única excepción es el botón <em>Acortar con TinyURL</em>, que pregunta
+			el almacenamiento local de este navegador y en ningún otro lado — si borrás los datos del
+			navegador, se borra también. La única excepción es el botón <em>Acortar con TinyURL</em>, que pregunta
 			antes y dice exactamente qué envía.`,
 
 		docLabel: 'Documento',
@@ -214,8 +210,6 @@ export const cvPage: Record<Lang, CvPageCopy> = {
 		docNew: 'Nuevo',
 		docDup: 'Duplicar',
 		docDel: 'Eliminar',
-		importMd: 'Importar .md',
-		exportMd: 'Exportar .md',
 		savedState: 'Guardado en este navegador',
 
 		editorAria: 'Editor',

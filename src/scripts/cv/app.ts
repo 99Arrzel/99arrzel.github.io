@@ -80,11 +80,31 @@ export function boot(): void {
 	const SHEET_CSS = sheetCssEl?.textContent ?? '';
 
 	// ── State ────────────────────────────────────────────────────────
+	// DEFAULT_CV is a first-run seed: in production a saved document shadows it
+	// forever, which is right for a visitor mid-edit and useless while editing
+	// the seed itself. On localhost the file is the source of truth instead —
+	// the seed document is re-synced from it on every boot and made active, so
+	// a change to default-cv.ts shows up on reload. Other documents are left
+	// alone, and this never runs on the deployed site.
+	const fromFile = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+	const SEED_NAME = 'My CV';
+
 	let docs: Doc[] = loadDocs();
 	if (!docs.length) {
-		docs = [makeDoc('My CV', DEFAULT_CV)];
+		docs = [makeDoc(SEED_NAME, DEFAULT_CV)];
 		saveDocs(docs);
 		setActiveId(docs[0].id);
+	} else if (fromFile) {
+		let seed = docs.find((d) => d.name === SEED_NAME);
+		if (seed) {
+			seed.markdown = DEFAULT_CV;
+			seed.updatedAt = Date.now();
+		} else {
+			seed = makeDoc(SEED_NAME, DEFAULT_CV);
+			docs.unshift(seed);
+		}
+		saveDocs(docs);
+		setActiveId(seed.id);
 	}
 	let activeId = getActiveId() ?? docs[0].id;
 	if (!docs.some((d) => d.id === activeId)) activeId = docs[0].id;
@@ -804,32 +824,7 @@ export function boot(): void {
 		refreshDocList();
 	});
 
-	// ── Events: import / export / print ──────────────────────────────
-	el<HTMLButtonElement>('export-btn')?.addEventListener('click', () => {
-		const doc = docs.find((d) => d.id === activeId);
-		const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `${suggestFilename(resume.profile.name, resume.profile.title) || doc?.name || 'cv'}.md`;
-		a.click();
-		window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-	});
-
-	const importInput = el<HTMLInputElement>('import-input');
-	el<HTMLButtonElement>('import-btn')?.addEventListener('click', () => importInput?.click());
-	importInput?.addEventListener('change', async () => {
-		const file = importInput.files?.[0];
-		if (!file) return;
-		const text = await file.text();
-		const doc = makeDoc(file.name.replace(/\.md$/i, '') || T.importedDoc, text);
-		docs.push(doc);
-		saveDocs(docs);
-		loadDoc(doc.id);
-		refreshDocList();
-		importInput.value = '';
-	});
-
+	// ── Events: print ────────────────────────────────────────────────
 	el<HTMLButtonElement>('print-btn')?.addEventListener('click', () => {
 		const live = shell.querySelector<HTMLElement>('.sheet');
 		printSheet({
