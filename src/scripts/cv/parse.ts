@@ -23,8 +23,10 @@ const PAGE_IDS: PageId[] = ['A4', 'Letter'];
 const DENSITY_IDS: DensityId[] = ['tight', 'normal', 'airy'];
 const PHOTO_SHAPES: PhotoShape[] = ['circle', 'square'];
 
-// One date token: "Jul 2025", "2020", or an open-ended marker.
-const TOK = String.raw`(?:[A-Za-z]{3,9}\.?\s+\d{4}|\d{4}|Present|Current|Now|Ongoing)`;
+// One date token: "Jul 2025", "2020", or an open-ended marker. The ranges are
+// anchored, so the Spanish markers have to be listed before their English
+// prefixes — "Presente" would otherwise match only "Present" and fail on the $.
+const TOK = String.raw`(?:[A-Za-z]{3,9}\.?\s+\d{4}|\d{4}|Presente|Present|Actualidad|Actual|Current|Now|Ongoing)`;
 const RANGE = new RegExp(String.raw`^(${TOK})\s*(?:[–—−-]|\bto\b)\s*(${TOK})$`, 'i');
 const SINGLE = new RegExp(String.raw`^(${TOK})$`, 'i');
 

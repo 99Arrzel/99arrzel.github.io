@@ -102,6 +102,110 @@ Self-hosted PWA for driving interactive Claude Code terminal sessions from any d
 Generates bank payment QRs by automating the Android app over ADB, for a bank with no public API.
 `;
 
+
+/** The same document in Spanish, for `/es/cv`. Section headings match the
+ *  Spanish names `lint.ts` recognises, so the ATS checks still pass. */
+export const DEFAULT_CV_ES = `---
+name: Andrés Carrillo Zelada
+title: Ingeniero Full-Stack Agéntico · Next.js / TypeScript / AWS
+location: Buenos Aires, Argentina
+email: af.carrillo@live.com
+links:
+  - linkedin.com/in/99arrzel
+  - github.com/99Arrzel
+extra: Español (nativo) · Inglés C1 — EF SET · Disponible para trabajo remoto global
+template: broadsheet
+page: Letter
+density: tight
+accent: #2f62c8
+rail:
+  - Habilidades Técnicas
+  - Educación
+---
+
+## Resumen Profesional
+
+Ingeniero full-stack con más de 3 años entregando aplicaciones web en producción de punta a punta, trabajando por contrato para equipos SaaS de Estados Unidos. Recientemente SDET en FloQast, donde construí un seeder declarativo de base de datos que habilitó más de 1.000 pruebas end-to-end en Playwright y Selenium. En PostReminder migré un producto PHP heredado a un monorepo Next.js 16 / React 19 / TypeScript, soy responsable del pipeline de despliegue en AWS ECS y construí suscripciones con Stripe sobre RBAC y permisos por plan. Trabajo en frontend, backend, infraestructura y herramientas de testing, y opero flujos agénticos con LLM que multiplicaron por cinco mi ritmo de entrega.
+
+## Habilidades Técnicas
+
+**Lenguajes:** TypeScript, JavaScript, PHP, Python
+**Frontend:** React, Next.js, Vue, Zustand, Tailwind CSS
+**Backend y Datos:** Node.js, Laravel, APIs REST, Prisma, MySQL, PostgreSQL, MongoDB
+**Testing:** Playwright, Selenium, quality engineering (QE), infraestructura de pruebas end-to-end, seeding declarativo de datos de prueba, feature flags con Harness
+**Infraestructura:** AWS (ECS, ECR, CloudFormation), GitHub Actions, Docker, Turborepo
+**Pagos / Autorización:** Stripe, RBAC, permisos por plan
+**Flujo de trabajo:** Git, ingeniería agéntica (flujos multiagente con LLM, agentes en paralelo, revisión automatizada), headless commerce (BigCommerce), integración de CMS (Prismic)
+
+## Experiencia
+
+### SDET (Software Developer in Test) @ FloQast — Equipo Close QE · Contrato · Remoto
+Jun 2026 – Oct 2026
+
+- Diseñé y construí un seeder declarativo de base de datos a partir de una especificación JSON, derivando sus colecciones y estructuras del código existente.
+- Aprovisioné las cuentas, credenciales y datos asociados que permitieron correr más de 1.000 pruebas end-to-end contra un entorno de desarrollo real.
+- Adapté las suites de Playwright y las heredadas de Selenium para ejecutarse en cuentas separadas.
+- El seeder levantaba para cada cuenta los registros de MongoDB, los proveedores de almacenamiento (Dropbox, Box) y los feature flags de Harness.
+- Llevé las suites a verde en múltiples entornos, diagnosticando y reportando fallos propios de cada entorno, y documenté el seeder para el resto del equipo.
+
+### Ingeniero Agéntico de IA (Ingeniero Full Stack) @ PostReminder — Contrato · Remoto · San Francisco, CA, EE. UU.
+Jul 2025 – Presente
+
+- Diseñé y opero el flujo de desarrollo agéntico del equipo: agentes LLM en paralelo, en git worktrees aislados, detrás de controles de revisión automatizados.
+- Los PR mergeados por mes pasaron de ~18 a ~100 tras adoptarlo en marzo de 2026 — 770 merges en total, la mayor parte en un equipo de seis ingenieros.
+- Migré un producto PHP heredado a un monorepo Next.js 16 / React 19 / TypeScript (Turborepo + Bun workspaces), unificando el sistema de tipos entre web, API y paquetes compartidos.
+- Soy responsable del pipeline de AWS de punta a punta: GitHub Actions → ECR → ECS vía CloudFormation, incluyendo tareas programadas de ECS, promoción entre entornos y rollback.
+- Soy responsable del diseño de base de datos en MySQL/Prisma: migraciones schema-first, DDL idempotente y un runner propio en TypeScript para backfills en producción seguros y reanudables.
+- Construí un sistema de autorización en dos capas — RBAC más permisos por plan — con checkout, prorrateo y sincronización de suscripciones por webhook en Stripe.
+
+### Desarrollador Web Frontend @ Apotheca — Contrato · Remoto · Medio tiempo desde jul 2025
+May 2025 – Feb 2026
+
+- Gestioné y mantuve el servidor Next.js detrás de una tienda headless de BigCommerce.
+- Modelé e integré tipos de contenido en Prismic, moviendo buena parte de la página al fetching de datos y recortando cerca de 1 MB del peso de la página.
+- Rehíce el flujo del carrito, reemplazando una implementación grande en contexto por un store de Zustand.
+- Ajusté la UI de la tienda según los requerimientos de UX y entregué correcciones y mejoras de forma continua.
+
+### Ingeniero Full Stack @ Gometrixs — Presencial · Santa Cruz, Bolivia
+Jun 2024 – Abr 2025
+
+- Lideré el desarrollo de Trippin, un sistema de gestión de propiedades (PMS) hecho desde cero, a cargo de la arquitectura y la entrega de punta a punta.
+- Coordiné un equipo pequeño de ingeniería: definí estándares de código, hice revisiones y sumé nuevos colaboradores.
+- Construí integraciones de RR. HH. para gestionar el directorio de personas y los perfiles de empleados.
+- Trabajé sobre el ERP de la empresa, corrigiendo sistemas contables y reportes.
+- Migré el código de JavaScript a TypeScript.
+
+### Ingeniero Full Stack @ Viacon Tours — Presencial · Santa Cruz, Bolivia
+Sep 2023 – Abr 2024
+
+- Colaboré en la construcción del ERP interno de la empresa sobre una arquitectura de microservicios en Laravel, contribuyendo a su migración de JavaScript a TypeScript y de PHP 7 a PHP 8.
+- Construí herramientas internas y funcionalidades de cara al cliente en PHP, React y MySQL.
+- Introduje estándares de ingeniería — proceso de revisión de código y convenciones — y acompañé a mis pares.
+
+### Ingeniero Full Stack @ Freelance — Remoto
+Feb 2023 – Jul 2023
+
+- Construí proyectos full-stack en Laravel y Vue para distintos clientes.
+
+## Educación
+
+### Ingeniería de Sistemas @ Universidad Franz Tamayo — Cursada completa, tesis pendiente
+2020 – 2024
+
+### Ciencias de la Computación @ Universidad de Buenos Aires (UBA)
+2018 – 2019
+
+## Proyectos
+
+### Remote Claude @ TypeScript, PWA — github.com/99Arrzel/remote-claude
+
+PWA autoalojada para manejar sesiones interactivas de Claude Code desde cualquier dispositivo.
+
+### BCP Bolivia QR Payments @ Python, ADB — github.com/99Arrzel/BCP-ADB-BOLIVIA
+
+Genera QR de pago bancario automatizando la app de Android por ADB, para un banco sin API pública.
+`;
+
 /** Seed for "Start a blank CV". */
 export const BLANK_CV = `---
 name: Your Name

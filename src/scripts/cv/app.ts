@@ -1,9 +1,9 @@
 // Wiring. Everything stateful lives here; the modules it calls are pure.
 
-import { BLANK_CV, DEFAULT_CV } from './default-cv';
+import { BLANK_CV, DEFAULT_CV, DEFAULT_CV_ES } from './default-cv';
 import { extractText, hasColumns, wordCount } from './extract';
 import { applyAction, applyKind, applyRail, autosize, autosizeAll, renderForm, setPath } from './form';
-import { s as strings } from './i18n';
+import { cvLang, s as strings } from './i18n';
 import { lint, type Diagnostic } from './lint';
 import { parseResume } from './parse';
 import { photoBytes, readPhoto } from './photo';
@@ -23,7 +23,6 @@ import {
 } from './share';
 import { digest, shorten } from './tinyurl';
 import {
-	getActiveId,
 	loadDocs,
 	makeDoc,
 	markSeen,
@@ -80,36 +79,29 @@ export function boot(): void {
 	const SHEET_CSS = sheetCssEl?.textContent ?? '';
 
 	// ── State ────────────────────────────────────────────────────────
-	// DEFAULT_CV is a first-run seed: in production a saved document shadows it
-	// forever, which is right for a visitor mid-edit and useless while editing
-	// the seed itself. On localhost the file is the source of truth instead —
-	// the seed document is re-synced from it on every boot and made active, so
-	// a change to default-cv.ts shows up on reload. Other documents are left
-	// alone, and this never runs on the deployed site.
-	const fromFile = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-	const SEED_NAME = 'My CV';
+	// The seed document is the file, not a saved copy. It is refreshed from the
+	// bundled CV on every load and made active, so editing default-cv.ts shows up
+	// on reload and a stale localStorage copy can never shadow it. Documents the
+	// visitor creates are untouched and stay in the switcher; anything typed into
+	// the seed itself is replaced next load, which is what New and Duplicate are
+	// for. The Spanish page seeds its own document, so the two never collide.
+	const seedMarkdown = cvLang() === 'es' ? DEFAULT_CV_ES : DEFAULT_CV;
+	const seedName = cvLang() === 'es' ? 'Mi CV' : 'My CV';
 
 	let docs: Doc[] = loadDocs();
-	if (!docs.length) {
-		docs = [makeDoc(SEED_NAME, DEFAULT_CV)];
-		saveDocs(docs);
-		setActiveId(docs[0].id);
-	} else if (fromFile) {
-		let seed = docs.find((d) => d.name === SEED_NAME);
-		if (seed) {
-			seed.markdown = DEFAULT_CV;
-			seed.updatedAt = Date.now();
-		} else {
-			seed = makeDoc(SEED_NAME, DEFAULT_CV);
-			docs.unshift(seed);
-		}
-		saveDocs(docs);
-		setActiveId(seed.id);
+	let seed = docs.find((d) => d.name === seedName);
+	if (seed) {
+		seed.markdown = seedMarkdown;
+		seed.updatedAt = Date.now();
+	} else {
+		seed = makeDoc(seedName, seedMarkdown);
+		docs.unshift(seed);
 	}
-	let activeId = getActiveId() ?? docs[0].id;
-	if (!docs.some((d) => d.id === activeId)) activeId = docs[0].id;
+	saveDocs(docs);
+	setActiveId(seed.id);
 
-	let markdown = docs.find((d) => d.id === activeId)?.markdown ?? DEFAULT_CV;
+	let activeId = seed.id;
+	let markdown = seedMarkdown;
 	let resume: Resume = parseResume(markdown);
 	let tab: Tab = 'markdown';
 	let formStale = false;
