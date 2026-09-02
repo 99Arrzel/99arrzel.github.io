@@ -15,6 +15,8 @@ export type Question = {
 	slip?: string;
 	heard?: string;
 	snippet?: string;
+	/** Highlighting language for `snippet`. Defaults to JS. */
+	snippetLang?: string;
 };
 
 export type Interview = {
@@ -141,6 +143,41 @@ const root = level[0]; // change ANY leaf and this root changes`,
 					},
 				],
 			},
+			{
+				company: 'micro1',
+				role: 'Full-stack Agentic Engineer',
+				date: 'Sep 2026',
+				sub: "An async screen run by micro1's AI recruiter — no human on the other end to read the silence.",
+				questions: [
+					{
+						prompt: 'Optimistic vs pessimistic locking in Postgres — what is the difference, and when would you reach for each?',
+						slip: "Blanked. I didn't have either term — I couldn't have told you which one grabs the lock up front and which one lets the write race and checks afterwards. The annoying part is that this isn't an exotic question: it's the plain \"two people edit the same row\" problem with names attached, and the names are the cheap part.",
+						answer:
+							'Both are answers to the same question: two transactions want to change the same row, and only one of them can be right. Postgres is MVCC, so readers never block writers and writers never block readers — the whole fight is writer versus writer. Pessimistic locking takes the lock up front: SELECT ... FOR UPDATE puts a row-level exclusive lock on the rows it returns, held until the transaction commits or rolls back, and anyone else who tries to lock or update those rows waits at the door. There are weaker flavours (FOR NO KEY UPDATE, FOR SHARE, FOR KEY SHARE) and two escape hatches that actually matter: NOWAIT errors out instead of waiting, and SKIP LOCKED steps over rows someone else already holds — which is how you build a job queue where N workers pull work without ever blocking each other. pg_advisory_xact_lock() does the same job for something that is not a row. The cost is that you are holding a lock: keep a transaction open across user think-time or an HTTP round trip and you get pile-ups, and taking locks in different orders in different code paths gets you deadlocks (Postgres detects those after deadlock_timeout, one second by default, and kills one side). Optimistic locking locks nothing. You read, you compute, and on the way out you assert that nothing moved: UPDATE ... WHERE id = ? AND version = ?, then look at the row count. Zero rows updated means someone committed ahead of you — reload, reapply, retry. A dedicated integer version column is the standard; Postgres also exposes the hidden xmin system column (the transaction id that wrote the current row version), so you can make the same check without adding a column — just know it is a 32-bit counter that reads back as frozen once vacuum freezes an old row, so a real column is safer for long-lived data. There is a third answer worth naming: let the engine do it. REPEATABLE READ and SERIALIZABLE are optimistic at the database level — SERIALIZABLE uses Serializable Snapshot Isolation to track read/write dependencies between concurrent transactions and aborts one with a 40001 serialization failure instead of letting the anomaly through. That is the least application code, but only if you write the retry loop; there is no optimistic concurrency without a retry. And the trap underneath all of it: on the default READ COMMITTED, a plain UPDATE accounts SET balance = balance - 10 WHERE id = 42 is already safe, because the UPDATE takes its own row lock and re-evaluates against the newest version of the row when it unblocks. What is not safe is read-modify-write in application code — SELECT balance, subtract in your language, UPDATE ... SET balance = 90. That is the lost update, and it is the thing both strategies exist to prevent. Choosing: optimistic when conflicts are rare and the transaction spans human time, because nobody should hold a database lock while a user fills in a form; pessimistic when conflicts are the normal case, when a retry is expensive or has side effects you cannot take back, or when the whole point is to hand out a piece of work exactly once.',
+						snippet: `-- Pessimistic: take the lock first. Everyone else waits at the door.
+BEGIN;
+  SELECT balance FROM accounts WHERE id = 42 FOR UPDATE; -- held until COMMIT
+  UPDATE accounts SET balance = balance - 10 WHERE id = 42;
+COMMIT;
+
+-- Optimistic: no lock. Assert on the way out that nobody moved first.
+UPDATE accounts
+   SET balance = balance - 10, version = version + 1
+ WHERE id = 42 AND version = 7;
+-- 0 rows updated → someone committed ahead of you → reload and retry
+
+-- The one worth memorising: a queue where N workers never block each other.
+SELECT id FROM jobs
+ WHERE status = 'pending'
+ ORDER BY created_at
+ LIMIT 1
+   FOR UPDATE SKIP LOCKED;`,
+						snippetLang: 'sql',
+						topic: 'Databases',
+						tags: ['Postgres', 'Locking', 'MVCC', 'Transactions'],
+					},
+				],
+			},
 		],
 	},
 	es: {
@@ -235,6 +272,41 @@ while (nivel.length > 1) {
 const raiz = nivel[0]; // cambiá CUALQUIER hoja y esta raíz cambia`,
 						topic: 'Web3',
 						tags: ['Árbol de Merkle', 'Hashing', 'Blockchain', 'Estructuras de datos'],
+					},
+				],
+			},
+			{
+				company: 'micro1',
+				role: 'Full-stack Agentic Engineer',
+				date: 'Sep 2026',
+				sub: 'Una entrevista asincrónica que conduce la reclutadora con IA de micro1 — nadie del otro lado que interprete el silencio.',
+				questions: [
+					{
+						prompt: 'Bloqueo optimista vs. pesimista en Postgres: ¿cuál es la diferencia y cuándo usarías cada uno?',
+						slip: 'Me quedé en blanco. No tenía ninguno de los dos términos — no habría podido decirte cuál toma el candado de entrada y cuál deja que la escritura corra y recién después verifica. Lo que más molesta es que no es una pregunta exótica: es el problema de siempre de "dos personas editan la misma fila" con nombres puestos, y los nombres son la parte barata.',
+						answer:
+							'Los dos son respuestas a la misma pregunta: dos transacciones quieren modificar la misma fila y solo una puede tener razón. Postgres es MVCC, así que los lectores nunca bloquean a los escritores ni los escritores a los lectores — toda la pelea es escritor contra escritor. El bloqueo pesimista toma el candado de entrada: SELECT ... FOR UPDATE pone un bloqueo exclusivo a nivel de fila sobre las filas que devuelve, y lo mantiene hasta que la transacción hace COMMIT o ROLLBACK; cualquier otro que intente bloquear o actualizar esas filas espera en la puerta. Hay variantes más débiles (FOR NO KEY UPDATE, FOR SHARE, FOR KEY SHARE) y dos válvulas de escape que sí importan: NOWAIT tira error en vez de esperar, y SKIP LOCKED saltea las filas que ya tiene tomadas otro — que es como se arma una cola de trabajos donde N workers agarran tareas sin bloquearse jamás entre sí. pg_advisory_xact_lock() hace lo mismo para algo que no es una fila. El costo es que estás sosteniendo un candado: si dejás una transacción abierta mientras el usuario piensa o durante un viaje HTTP de ida y vuelta, se te apilan; y tomar candados en distinto orden en distintos caminos del código te lleva a deadlocks (Postgres los detecta después de deadlock_timeout, un segundo por defecto, y mata a uno de los dos). El bloqueo optimista no bloquea nada. Leés, calculás y, a la salida, afirmás que nada se movió: UPDATE ... WHERE id = ? AND version = ?, y después mirás la cantidad de filas afectadas. Cero filas significa que alguien commiteó antes que vos — recargás, reaplicás y reintentás. Lo estándar es una columna entera version; Postgres además expone la columna de sistema oculta xmin (el id de la transacción que escribió la versión actual de la fila), así que podés hacer la misma verificación sin agregar ninguna columna — eso sí, es un contador de 32 bits que se lee como congelado cuando el vacuum congela una fila vieja, con lo cual una columna propia es más segura para datos de larga vida. Hay una tercera respuesta que vale nombrar: dejar que lo resuelva el motor. REPEATABLE READ y SERIALIZABLE son optimistas a nivel de base de datos — SERIALIZABLE usa Serializable Snapshot Isolation para rastrear dependencias de lectura/escritura entre transacciones concurrentes y aborta una con un error de serialización 40001 en lugar de dejar pasar la anomalía. Es la opción con menos código de aplicación, pero solo si escribís el bucle de reintento; no existe la concurrencia optimista sin reintento. Y la trampa que está debajo de todo esto: con el READ COMMITTED por defecto, un simple UPDATE accounts SET balance = balance - 10 WHERE id = 42 ya es seguro, porque el propio UPDATE toma su bloqueo de fila y re-evalúa contra la versión más nueva de la fila cuando se destraba. Lo que no es seguro es hacer leer-modificar-escribir en el código de la aplicación: SELECT balance, restar en tu lenguaje, UPDATE ... SET balance = 90. Eso es la actualización perdida, y es justamente lo que ambas estrategias existen para evitar. Cómo elegir: optimista cuando los conflictos son raros y la transacción abarca tiempo humano, porque nadie debería sostener un candado de base de datos mientras un usuario completa un formulario; pesimista cuando los conflictos son lo normal, cuando reintentar es caro o tiene efectos secundarios que no podés deshacer, o cuando el objetivo es entregar una tarea exactamente una vez.',
+						snippet: `-- Pesimista: tomás el candado primero. El resto espera en la puerta.
+BEGIN;
+  SELECT balance FROM accounts WHERE id = 42 FOR UPDATE; -- retenido hasta el COMMIT
+  UPDATE accounts SET balance = balance - 10 WHERE id = 42;
+COMMIT;
+
+-- Optimista: sin candado. A la salida afirmás que nadie se movió antes.
+UPDATE accounts
+   SET balance = balance - 10, version = version + 1
+ WHERE id = 42 AND version = 7;
+-- 0 filas actualizadas → alguien commiteó antes que vos → recargá y reintentá
+
+-- La que conviene memorizar: una cola donde N workers nunca se bloquean.
+SELECT id FROM jobs
+ WHERE status = 'pending'
+ ORDER BY created_at
+ LIMIT 1
+   FOR UPDATE SKIP LOCKED;`,
+						snippetLang: 'sql',
+						topic: 'Bases de datos',
+						tags: ['Postgres', 'Bloqueos', 'MVCC', 'Transacciones'],
 					},
 				],
 			},

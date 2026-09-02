@@ -88,7 +88,7 @@ const subFor = (n: number) =>
 									<div class="fail-answer">
 										<p class="answer-label">{q.heard ? c.heardAnswerLabel : c.answerLabel}</p>
 										<p>{q.answer}</p>
-										{q.snippet && <Code code={q.snippet} lang="js" theme="github-dark" />}
+										{q.snippet && <Code code={q.snippet} lang={q.snippetLang ?? "js"} theme="github-dark" />}
 									</div>
 									<div class="tag-row">
 										{q.tags.map((t) => <span class="tag">{t}</span>)}
