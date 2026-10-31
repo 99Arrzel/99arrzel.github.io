@@ -1,0 +1,837 @@
+---
+// "Life in weeks" section of the home page: my life as one square per week,
+// with the jobs, degrees and goals from src/life.ts drawn on it.
+import { life as copy } from '../i18n/life';
+import { type Lang } from '../i18n';
+import { milestones as allMilestones } from '../life';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = copy[lang];
+
+const BORN = '1999-10-31';
+// A round guess, not a prediction.
+const LIFESPAN = 80;
+
+// A milestone's date is printed at the precision it was written with, so a
+// year-only entry never reads as a specific week. UTC keeps the day from
+// sliding back on a build machine west of Greenwich.
+const dayFmt = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
+const monthFmt = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'short', timeZone: 'UTC' });
+const when = (date: string, inRange = false) => {
+	const [y, m, d] = date.split('-').map(Number);
+	if (d) return dayFmt.format(Date.UTC(y, m - 1, d));
+	if (m) return monthFmt.format(Date.UTC(y, m - 1, 1));
+	// "2020 – 2024" already says it's approximate; only a lone year needs it spelled out.
+	return inRange ? String(y) : c.sometimeIn.replace('{y}', String(y));
+};
+
+const milestones = [...allMilestones]
+	.sort((a, b) => a.date.localeCompare(b.date))
+	.map((m) => ({
+		date: m.date,
+		until: m.until ?? '',
+		kind: m.kind ?? 'work',
+		when: m.until
+			? `${when(m.date, true)} – ${m.until === 'present' ? c.present : when(m.until, true)}`
+			: when(m.date),
+		goal: !!m.goal,
+		title: m.title[lang],
+		body: m.body?.[lang] ?? '',
+	}));
+
+const config = { lang, born: BORN, lifespan: LIFESPAN, copy: c, milestones };
+---
+
+<section class="life" id="life" data-config={JSON.stringify(config)}>
+	<h2>{c.title}</h2>
+	<p class="intro" set:html={c.introHtml} />
+
+	<p class="status" id="status">&nbsp;</p>
+
+	<div class="stats">
+		<div class="stat">
+			<span class="num" id="stat-lived">--</span>
+			<span class="lbl">{c.stats.lived}</span>
+		</div>
+		<div class="stat">
+			<span class="num" id="stat-left">--</span>
+			<span class="lbl">{c.stats.left}</span>
+		</div>
+		<div class="stat">
+			<span class="num" id="stat-pct">--</span>
+			<span class="lbl">{c.stats.percent}</span>
+		</div>
+	</div>
+	<div class="bar" aria-hidden="true"><span id="bar-fill"></span></div>
+
+	<div class="legend" aria-hidden="true">
+		<span><i class="c l"></i>{c.legend.lived}</span>
+		<span><i class="c n"></i>{c.legend.now}</span>
+		<span><i class="c"></i>{c.legend.left}</span>
+		<span><i class="c m"></i>{c.legend.milestone}</span>
+		<span><i class="c g"></i>{c.legend.goal}</span>
+		<span><i class="c l w"></i>{c.legend.working}</span>
+		<span><i class="c l s"></i>{c.legend.studying}</span>
+		<span><i class="c l multi two"><b class="w"></b><b class="w"></b></i>{c.legend.overlap}</span>
+		<span><i class="c h"></i>{c.legend.holidays}</span>
+	</div>
+	<p class="xmas" id="xmas">&nbsp;</p>
+
+	<div class="grid" id="grid" tabindex="0" role="group" aria-label={c.gridAria}></div>
+
+	<div class="panel" id="panel" aria-live="polite">
+		<div class="panel-meta">
+			<span id="p-when"></span>
+			<span class="panel-rel" id="p-rel"></span>
+		</div>
+		<p class="panel-title" id="p-title">&nbsp;</p>
+		<div class="panel-items" id="p-items"></div>
+	</div>
+	<p class="hint">{c.panelHint}</p>
+
+	<div class="milestones">
+		<h3>{c.milestonesTitle}</h3>
+		<ul>
+			{
+				milestones.map((m) => (
+					<li>
+						<button type="button" class="ms" data-date={m.date}>
+							<span class="ms-date">{m.when}</span>
+							<span class="ms-title">{m.title}</span>
+							{m.goal && <span class="tag">{c.goalTag}</span>}
+						</button>
+					</li>
+				))
+			}
+		</ul>
+	</div>
+</section>
+
+<script>
+	import type { life } from '../i18n/life';
+
+	type Copy = (typeof life)['en'];
+	type Milestone = { date: string; until: string; kind: 'work' | 'study'; when: string; goal: boolean; title: string; body: string };
+	type Holiday = 'xmas' | 'ny';
+
+	const root = document.getElementById('life')!;
+	const { lang, born: bornStr, lifespan, copy: c, milestones } = JSON.parse(root.dataset.config!) as {
+		lang: string;
+		born: string;
+		lifespan: number;
+		copy: Copy;
+		milestones: Milestone[];
+	};
+
+	const DAY = 864e5;
+	// Tim Urban's poster: 52 squares to a row, one row per year of age.
+	const COLS = 52;
+
+	const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+	const grid = $('grid');
+
+	const nf = new Intl.NumberFormat(lang);
+	const dfRange = new Intl.DateTimeFormat(lang, { year: 'numeric', month: 'short', day: 'numeric' });
+	const rtf = new Intl.RelativeTimeFormat(lang, { numeric: 'auto' });
+	const fill = (s: string, vars: Record<string, string | number>) =>
+		s.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? ''));
+
+	const addYears = (d: Date, n: number) => new Date(d.getFullYear() + n, d.getMonth(), d.getDate());
+	const addDays = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+
+	const [by, bm, bd] = bornStr.split('-').map(Number);
+	const born = new Date(by, bm - 1, bd);
+	const t = new Date();
+	const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+	const total = lifespan * COLS;
+
+	function ageAt(day: Date): number {
+		let a = day.getFullYear() - born.getFullYear();
+		if (addYears(born, a) > day) a--;
+		return a;
+	}
+
+	/** Index of the square containing `day`, counting from the first week of life. */
+	function indexOf(day: Date): number {
+		const age = ageAt(day);
+		// A year is 52 weeks and a day or two; the spare days fold into week 52.
+		const col = Math.min(COLS - 1, Math.floor((+day - +addYears(born, age)) / (7 * DAY)));
+		return age * COLS + col;
+	}
+
+	/** First day of square `i`. */
+	const dateOf = (i: number) => addDays(addYears(born, Math.floor(i / COLS)), (i % COLS) * 7);
+
+	/**
+	 * The days a milestone's date covers, `[start, end)`: one day, one month or
+	 * one year depending on how much of `YYYY-MM-DD` was written.
+	 */
+	function spanOf(s: string): [Date, Date] | null {
+		const m = /^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/.exec(s);
+		if (!m) return null;
+		const y = +m[1];
+		if (m[3]) return [new Date(y, +m[2] - 1, +m[3]), new Date(y, +m[2] - 1, +m[3] + 1)];
+		if (m[2]) return [new Date(y, +m[2] - 1, 1), new Date(y, +m[2], 1)];
+		return [new Date(y, 0, 1), new Date(y + 1, 0, 1)];
+	}
+
+	/** The squares `[first, last]` a milestone's date covers. */
+	function squaresOf(s: string): [number, number] | null {
+		const span = spanOf(s);
+		if (!span) return null;
+		const start = span[0] < born ? born : span[0];
+		const last = addDays(span[1], -1);
+		if (last < born) return null;
+		return [indexOf(start), indexOf(last)];
+	}
+
+	const isYear = (m: Milestone) => /^\d{4}$/.test(m.date);
+	const push = <T,>(map: Map<number, T[]>, i: number, v: T) => map.set(i, [...(map.get(i) ?? []), v]);
+
+	const now = indexOf(today);
+	// Square index → the milestones whose date falls in it.
+	const pins = new Map<number, Milestone[]>();
+	// Square index → the jobs and degrees running through it.
+	const periods = new Map<number, Milestone[]>();
+	// Square index → the Christmas / New Year's Day that falls in it. Not
+	// milestones, just the one time a year the whole family is in one room,
+	// so they get their own quieter colour.
+	const holidays = new Map<number, Holiday[]>();
+
+	for (const m of milestones) {
+		const sq = squaresOf(m.date);
+		if (!sq) continue;
+		// A month gets one gold square, its first week, rather than four or five
+		// in a row; a job's other weeks are already drawn as worked.
+		const last = /^\d{4}-\d{2}$/.test(m.date) ? sq[0] : sq[1];
+		for (let i = sq[0]; i <= Math.min(last, total - 1); i++) push(pins, i, m);
+
+		if (!m.until) continue;
+		const to = m.until === 'present' ? [now, now] : squaresOf(m.until);
+		if (!to) continue;
+		for (let i = sq[0]; i <= Math.min(to[1], total - 1); i++) push(periods, i, m);
+	}
+	for (let y = born.getFullYear(); y <= born.getFullYear() + lifespan; y++) {
+		const days: [Holiday, Date][] = [
+			['ny', new Date(y, 0, 1)],
+			['xmas', new Date(y, 11, 25)],
+		];
+		for (const [h, d] of days) {
+			if (d < born) continue;
+			const i = indexOf(d);
+			if (i < total) push(holidays, i, h);
+		}
+	}
+
+	let selected = 0;
+	// Where the pointer last really moved. Jumping to a milestone scrolls the
+	// grid under a resting pointer, and the browser then reports a hover on
+	// whatever square slid beneath it; that must not replace the selection.
+	let pointer = '';
+
+	function renderGrid() {
+		let html = '';
+		for (let age = 0; age < lifespan; age++) {
+			const gap = age > 0 && age % 10 === 0 ? ' gap' : '';
+			const label = age % 5 === 0 ? String(age) : '';
+			html += `<div class="row${gap}"><span class="age">${label}</span><div class="cells">`;
+			for (let i = age * COLS; i < (age + 1) * COLS; i++) {
+				let cls = i < now ? 'c l' : i === now ? 'c n' : 'c';
+				let inner = '';
+				const pin = pins.get(i);
+				// A day or a month gets the full gold; a whole year only a tint, so
+				// it reads as "sometime around here" and the holidays show through.
+				const sharp = pin?.filter((m) => !isYear(m));
+				if (sharp?.length) cls += sharp.every((m) => m.goal) ? ' g' : ' m';
+				else if (holidays.has(i)) cls += ' h';
+				// Only lived squares: "now" keeps its green, and the panel still
+				// lists what's running through it.
+				else if (periods.has(i) && i < now) {
+					const running = periods.get(i)!;
+					if (running.length === 1) {
+						cls += running[0].kind === 'study' ? ' s' : ' w';
+					} else {
+						// Several at once: the square splits into one tile per job or
+						// degree — halves for two, a 2×2 for three or four — so two
+						// jobs read as two, not as one purple square.
+						cls += running.length === 2 ? ' multi two' : ' multi';
+						inner = running
+							.slice(0, 4)
+							.map((m) => `<b class="${m.kind === 'study' ? 's' : 'w'}"></b>`)
+							.join('');
+					}
+				} else if (pin) cls += ' y';
+				html += `<i class="${cls}" data-i="${i}">${inner}</i>`;
+			}
+			html += '</div></div>';
+		}
+		grid.innerHTML = html;
+		snapToPixels();
+	}
+
+	/**
+	 * Size the squares in whole pixels. Left to `1fr`, a square is 12.37px or
+	 * so, each one rounds its edges differently, and the hairline inside a
+	 * split square comes out thin in one, thick in the next and blurred in a
+	 * third. Whole pixels, and a whole-pixel left half, make every one the same.
+	 */
+	function snapToPixels() {
+		const cells = grid.querySelector<HTMLElement>('.cells');
+		if (!cells) return;
+		const gap = parseFloat(getComputedStyle(cells).columnGap) || 0;
+		const size = Math.floor((cells.clientWidth - gap * (COLS - 1)) / COLS);
+		if (size < 2) {
+			grid.style.removeProperty('--cell');
+			return;
+		}
+		grid.style.setProperty('--cell', `${size}px`);
+		grid.style.setProperty('--half', `${Math.floor((size - 1) / 2)}px`);
+	}
+
+	function renderStats() {
+		const lived = Math.min(total, now);
+		$('stat-lived').textContent = nf.format(lived);
+		$('stat-left').textContent = nf.format(total - lived);
+		$('stat-pct').textContent = `${Math.round((lived / total) * 100)}%`;
+		$('bar-fill').style.width = `${(lived / total) * 100}%`;
+
+		const age = ageAt(today);
+		const daysToBirthday = Math.round((+addYears(born, age + 1) - +today) / DAY);
+		const birthday =
+			+addYears(born, age) === +today
+				? c.birthdayToday
+				: daysToBirthday === 1
+					? c.birthdayTomorrow
+					: fill(c.birthdayIn, { n: daysToBirthday });
+		$('status').textContent = `${fill(c.age, { age })} ${birthday}`;
+
+		const end = addYears(born, lifespan);
+		let christmases = 0;
+		for (let y = today.getFullYear(); new Date(y, 11, 25) < end; y++) {
+			if (new Date(y, 11, 25) >= today) christmases++;
+		}
+		$('xmas').textContent = fill(c.xmasLeft, { n: nf.format(christmases), age: lifespan });
+	}
+
+	/** Fill the detail panel for square `i`. */
+	function show(i: number) {
+		const start = dateOf(i);
+		const last = addDays(dateOf(i + 1), -1);
+		$('p-when').textContent = +start === +last ? dfRange.format(start) : dfRange.formatRange(start, last);
+		$('p-rel').textContent = rtf.format(i - now, 'week');
+
+		const pin = pins.get(i) ?? [];
+		const items = $('p-items');
+		// Only a milestone pinned to this day or month may title the square; one
+		// known only to the year is listed under it, never claimed as this week.
+		const sharp = pin.filter((m) => !isYear(m));
+		const titled = sharp.length === 1 ? sharp[0] : null;
+		$('p-title').textContent = titled?.title ?? fill(c.cell, { age: Math.floor(i / COLS), n: (i % COLS) + 1 });
+		// Bodies are written by me in src/life.ts, so they may carry links.
+		items.innerHTML = pin
+			.map((m) => {
+				const head = m === titled ? '' : `<strong>${m.title}</strong>`;
+				const tag = m.goal ? `<span class="tag">${c.goalTag}</span>` : '';
+				const when = `<span class="when">${m.when}</span>`;
+				return `<div class="item">${tag}${head}${when}${m.body ? `<p>${m.body}</p>` : ''}</div>`;
+			})
+			.join('');
+		// Jobs and degrees running through this square, unless it's the start
+		// already listed above.
+		for (const m of periods.get(i) ?? []) {
+			if (pin.includes(m)) continue;
+			const swatch = m.kind === 'study' ? 's' : 'w';
+			items.innerHTML += `<div class="item hol"><i class="c l ${swatch}" aria-hidden="true"></i>${m.title} <span class="hol-note">${m.when}</span></div>`;
+		}
+		for (const h of holidays.get(i) ?? []) {
+			items.innerHTML += `<div class="item hol"><i class="c h" aria-hidden="true"></i>${c.holidays[h]} <span class="hol-note">${c.holidayNote}</span></div>`;
+		}
+		$('panel').classList.toggle('pinned', pin.length > 0);
+	}
+
+	function select(i: number, scroll = false) {
+		selected = Math.max(0, Math.min(total - 1, i));
+		grid.querySelector('.sel')?.classList.remove('sel');
+		const cell = grid.querySelector<HTMLElement>(`[data-i="${selected}"]`);
+		cell?.classList.add('sel');
+		if (scroll) cell?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+		show(selected);
+	}
+
+	// One set of listeners for every square: there are thousands of them.
+	// Hovering previews a square; clicking (or tapping) pins it.
+	const cellIndex = (e: Event) => {
+		const i = (e.target as HTMLElement).closest<HTMLElement>('.c')?.dataset.i;
+		return i === undefined ? null : +i;
+	};
+	grid.addEventListener('mousemove', (e) => {
+		const at = `${e.screenX},${e.screenY}`;
+		if (at === pointer) return;
+		pointer = at;
+		const i = cellIndex(e);
+		if (i !== null) show(i);
+	});
+	grid.addEventListener('mouseleave', () => show(selected));
+	grid.addEventListener('click', (e) => {
+		const i = cellIndex(e);
+		if (i !== null) select(i);
+	});
+	grid.addEventListener('keydown', (e) => {
+		const step: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -COLS, ArrowDown: COLS };
+		if (e.key in step) select(selected + step[e.key], true);
+		else if (e.key === 'Home') select(now, true);
+		else return;
+		e.preventDefault();
+	});
+
+	root.querySelectorAll<HTMLButtonElement>('.ms').forEach((btn) =>
+		btn.addEventListener('click', () => {
+			// Its gold square. A year has none, so aim for mid-year, well clear of
+			// the New Year square that its first week shares.
+			const date = btn.dataset.date!;
+			const sq = squaresOf(date);
+			if (sq) select(/^\d{4}$/.test(date) ? Math.floor((sq[0] + sq[1]) / 2) : sq[0], true);
+		}),
+	);
+
+	// The row's width follows the page, not the squares, so it can be measured
+	// with the squares at any size.
+	new ResizeObserver(snapToPixels).observe(grid);
+
+	renderGrid();
+	renderStats();
+	select(Math.min(now, total - 1));
+</script>
+
+
+<style>
+	.life {
+		margin-bottom: 3em;
+	}
+	.life > h2 {
+		font-size: 1.5em;
+		margin-bottom: 0.6em;
+	}
+	.intro {
+		color: var(--text-light);
+		font-size: 0.95em;
+	}
+	.status {
+		margin: 1.5em 0 0.5em;
+		font-size: 1.15em;
+		color: var(--text-heading);
+	}
+
+	/* ── Headline numbers ───────────────────────────────────────── */
+	.stats {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 0.75em;
+	}
+	.stat {
+		display: flex;
+		flex-direction: column;
+		padding: 0.75em 1em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+	}
+	.num {
+		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-size: 1.6em;
+		font-weight: 600;
+		line-height: 1.1;
+		color: var(--text-heading);
+		font-variant-numeric: tabular-nums;
+	}
+	.lbl {
+		margin-top: 0.35em;
+		font-size: 0.65em;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		color: var(--text-light);
+	}
+	.bar {
+		height: 4px;
+		margin: 0.9em 0 1.5em;
+		border-radius: 2px;
+		background: var(--border);
+		overflow: hidden;
+	}
+	.bar span {
+		display: block;
+		height: 100%;
+		background: var(--accent);
+		transition: width 0.3s ease;
+	}
+
+	/* ── The grid ───────────────────────────────────────────────── */
+	.hint {
+		margin: 0.6em 0 1.5em;
+		font-size: 0.75em;
+		color: var(--text-light);
+	}
+	.legend {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3em 1.25em;
+		margin: 1.5em 0 0.6em;
+		font-size: 0.72em;
+		color: var(--text-light);
+	}
+	.legend span {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45em;
+	}
+	.legend .c {
+		width: 0.8em;
+		height: 0.8em;
+	}
+	.grid {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+	/* Grid rows are injected by the script, so they need :global to pick up
+	   the styles scoped to this component. */
+	.grid :global(.row) {
+		display: grid;
+		grid-template-columns: 1.6em minmax(0, 1fr);
+		align-items: center;
+		gap: 0.4em;
+	}
+	.grid :global(.row.gap) {
+		margin-top: 4px;
+	}
+	.grid :global(.age) {
+		font-size: 0.5em;
+		line-height: 1;
+		text-align: right;
+		color: var(--text-light);
+		font-variant-numeric: tabular-nums;
+	}
+	.grid :global(.cells) {
+		display: grid;
+		grid-template-columns: repeat(52, var(--cell, minmax(0, 1fr)));
+		gap: 2px;
+	}
+	.grid :global(.c),
+	.legend .c {
+		display: block;
+		aspect-ratio: 1;
+		border-radius: 1px;
+		background: transparent;
+		box-shadow: inset 0 0 0 1px var(--border);
+	}
+	.grid :global(.c.l),
+	.legend .c.l {
+		background: var(--accent);
+		box-shadow: none;
+		opacity: 0.85;
+	}
+	.grid :global(.c.n),
+	.legend .c.n {
+		background: #3fb98a;
+		box-shadow: 0 0 0 0 rgba(63, 185, 138, 0.6);
+		animation: now-pulse 2.4s ease-out infinite;
+	}
+	.grid :global(.c.sel) {
+		outline: 1px solid var(--text-heading);
+		outline-offset: 1px;
+	}
+	@keyframes now-pulse {
+		0% {
+			box-shadow: 0 0 0 0 rgba(63, 185, 138, 0.6);
+		}
+		70% {
+			box-shadow: 0 0 0 5px rgba(63, 185, 138, 0);
+		}
+		100% {
+			box-shadow: 0 0 0 0 rgba(63, 185, 138, 0);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.grid :global(.c.n),
+		.legend .c.n {
+			animation: none;
+		}
+		.bar span {
+			transition: none;
+		}
+	}
+	/* Milestones: gold where something happened, a gold outline where I want
+	   something to. Declared after .l so they win on lived squares, before
+	   .sel so the selection ring still shows on top. */
+	.grid :global(.c.m),
+	.legend .c.m {
+		background: #f2c14e;
+		box-shadow: 0 0 6px rgba(242, 193, 78, 0.55);
+		opacity: 1;
+		cursor: pointer;
+	}
+	.grid :global(.c.g),
+	.legend .c.g {
+		background: rgba(242, 193, 78, 0.12);
+		box-shadow: inset 0 0 0 1.5px #f2c14e;
+		cursor: pointer;
+	}
+	/* Christmas and New Year: red, filled once they've happened and outlined
+	   while they're still ahead. */
+	.grid :global(.c.h),
+	.legend .c.h,
+	.panel-items :global(.c.h) {
+		background: transparent;
+		box-shadow: inset 0 0 0 1.5px #e5534b;
+	}
+	.grid :global(.c.l.h) {
+		background: #e5534b;
+		box-shadow: none;
+	}
+	.xmas {
+		margin: 0 0 0.8em;
+		font-size: 0.75em;
+		color: var(--text-light);
+	}
+	.panel-items :global(.hol) {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: 0.2em 0.5em;
+		font-size: 0.9em;
+		color: var(--text-heading);
+	}
+	.panel-items :global(.hol .c) {
+		display: inline-block;
+		width: 0.7em;
+		height: 0.7em;
+		border-radius: 2px;
+	}
+	.panel-items :global(.hol-note) {
+		color: var(--text-light);
+	}
+	/* Weeks spent working. Only lived ones: the "now" square keeps its green. */
+	.grid :global(.c.l.w),
+	.legend .c.l.w,
+	.panel-items :global(.c.l.w) {
+		background: #a371f7;
+		box-shadow: none;
+	}
+	.grid :global(.c.l.s),
+	.legend .c.l.s,
+	.panel-items :global(.c.l.s) {
+		background: #39c5cf;
+		box-shadow: none;
+	}
+	/* Overlaps: the square becomes tiles with a hairline of background
+	   between them, so two purple halves still count as two. */
+	.grid :global(.c.multi),
+	.legend .c.multi {
+		display: grid;
+		grid-template-columns: var(--half, 1fr) 1fr;
+		grid-template-rows: var(--half, 1fr) 1fr;
+		gap: 1px;
+		background: transparent;
+		box-shadow: none;
+		overflow: hidden;
+	}
+	.grid :global(.c.multi.two),
+	.legend .c.multi.two {
+		grid-template-rows: 1fr;
+	}
+	.grid :global(.c.multi b),
+	.legend .c.multi b {
+		display: block;
+		min-width: 0;
+		min-height: 0;
+	}
+	.grid :global(.c.multi b.w),
+	.legend .c.multi b.w {
+		background: #a371f7;
+	}
+	.grid :global(.c.multi b.s),
+	.legend .c.multi b.s {
+		background: #39c5cf;
+	}
+	.grid :global(.c.y) {
+		box-shadow: inset 0 0 0 1px rgba(242, 193, 78, 0.55);
+	}
+	.grid :global(.c.l.y) {
+		background: color-mix(in srgb, var(--accent) 60%, #f2c14e);
+	}
+	.panel-items :global(.when) {
+		display: block;
+		font-size: 0.75em;
+		color: var(--text-light);
+	}
+	.grid {
+		cursor: crosshair;
+	}
+	.grid:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 6px;
+		border-radius: 4px;
+	}
+	.grid :global(.c:hover) {
+		outline: 1px solid var(--text-light);
+		outline-offset: 1px;
+	}
+
+	/* ── Detail panel ───────────────────────────────────────────── */
+	/* Sticks to the bottom of the screen while the grid scrolls past: the grid
+	   is taller than a laptop screen, and a click near the top would otherwise
+	   update a panel nobody can see. */
+	.panel {
+		position: sticky;
+		bottom: 0.75em;
+		z-index: 1;
+		box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.45);
+		margin-top: 1em;
+		padding: 0.9em 1.2em;
+		min-height: 5.2em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-left: 3px solid var(--border);
+		border-radius: 8px;
+		transition: border-color 0.2s ease;
+	}
+	.panel.pinned {
+		border-left-color: #f2c14e;
+	}
+	.panel-meta {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		gap: 0.25em 1em;
+		font-size: 0.7em;
+		color: var(--text-light);
+		font-variant-numeric: tabular-nums;
+	}
+	.panel-rel {
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+	}
+	.panel-title {
+		margin: 0.2em 0 0;
+		font-size: 1.1em;
+		font-weight: 700;
+		color: var(--text-heading);
+	}
+	.panel.pinned .panel-title {
+		color: #f2c14e;
+	}
+	.panel-items :global(.item) {
+		margin-top: 0.4em;
+	}
+	.panel-items :global(p) {
+		margin: 0.3em 0 0;
+		font-size: 0.9em;
+		line-height: 1.55;
+	}
+	.panel-items :global(strong) {
+		color: var(--text-heading);
+	}
+	.tag,
+	.panel-items :global(.tag) {
+		display: inline-flex;
+		align-items: center;
+		margin-right: 0.5em;
+		/* Capitals have no descenders, so a line-height of 1 leaves them riding
+		   high; the extra top padding settles them in the middle. The right side
+		   is short by the letter-spacing the last letter trails behind it. */
+		padding: 0.4em calc(0.75em - 0.08em) 0.3em 0.75em;
+		border: 1px solid #f2c14e;
+		border-radius: 999px;
+		font-size: 0.65em;
+		font-weight: 700;
+		line-height: 1;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: #f2c14e;
+		vertical-align: middle;
+		white-space: nowrap;
+	}
+
+	/* ── Milestone list ─────────────────────────────────────────── */
+	.milestones h3 {
+		margin-top: 1.5em;
+		font-size: 1em;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		color: var(--text-light);
+	}
+	.milestones ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4em;
+	}
+	.ms {
+		display: flex;
+		align-items: baseline;
+		gap: 0.9em;
+		width: 100%;
+		padding: 0.5em 0.9em;
+		background: transparent;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		color: var(--text);
+		font-family: inherit;
+		font-size: 0.85em;
+		text-align: left;
+		cursor: pointer;
+		transition: border-color 0.2s ease;
+	}
+	.ms:hover,
+	.ms:focus-visible {
+		border-color: #f2c14e;
+	}
+	.ms-date {
+		flex: none;
+		min-width: 7.5em;
+		font-size: 0.85em;
+		color: var(--text-light);
+		font-variant-numeric: tabular-nums;
+	}
+	.ms-title {
+		color: var(--text-heading);
+	}
+	.ms .tag {
+		margin-left: auto;
+	}
+
+	@media (max-width: 640px) {
+		.stats {
+			gap: 0.5em;
+		}
+		.stat {
+			padding: 0.6em 0.7em;
+		}
+		.num {
+			font-size: 1.2em;
+		}
+		.lbl {
+			font-size: 0.55em;
+			letter-spacing: 0.06em;
+		}
+		/* 52 squares across a phone leaves no room for gaps; a hairline keeps
+		   the rows readable without shrinking the squares to nothing. */
+		.grid,
+		.grid :global(.cells) {
+			gap: 1px;
+		}
+		.grid :global(.row) {
+			grid-template-columns: 1.2em minmax(0, 1fr);
+			gap: 0.25em;
+		}
+		.grid :global(.c) {
+			border-radius: 0;
+		}
+	}
+</style>

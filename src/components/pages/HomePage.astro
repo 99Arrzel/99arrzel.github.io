@@ -2,6 +2,7 @@
 import BaseHead from '../BaseHead.astro';
 import Footer from '../Footer.astro';
 import Header from '../Header.astro';
+import LifeInWeeks from '../LifeInWeeks.astro';
 import { SITE_TITLE } from '../../consts';
 import { home } from '../../i18n/home';
 import { localizePath, type Lang } from '../../i18n';
@@ -87,11 +88,13 @@ const wallTiles = [
 						{c.availability}
 					</p>
 				</div>
-				<a class="scroll-hint" href="#work">
+				<a class="scroll-hint" href="#life">
 					<span>{c.scrollHint}</span>
 					<span class="arrow" aria-hidden="true">&darr;</span>
 				</a>
 			</section>
+
+			<LifeInWeeks lang={lang} />
 
 			<section id="work" class="services">
 				<h2>{c.servicesTitle}</h2>
