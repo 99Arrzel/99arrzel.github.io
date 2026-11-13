@@ -410,10 +410,9 @@ const config = { lang, born: BORN, lifespan: LIFESPAN, copy: c, milestones };
 
 <style>
 	.life {
-		margin-bottom: 3em;
+		margin-bottom: 4.5em;
 	}
 	.life > h2 {
-		font-size: 1.5em;
 		margin-bottom: 0.6em;
 	}
 	.intro {
@@ -438,10 +437,11 @@ const config = { lang, born: BORN, lifespan: LIFESPAN, copy: c, milestones };
 		padding: 0.75em 1em;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: var(--radius);
 	}
 	.num {
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+		font-family: var(--mono);
+		letter-spacing: -0.04em;
 		font-size: 1.6em;
 		font-weight: 600;
 		line-height: 1.1;
@@ -449,8 +449,9 @@ const config = { lang, born: BORN, lifespan: LIFESPAN, copy: c, milestones };
 		font-variant-numeric: tabular-nums;
 	}
 	.lbl {
-		margin-top: 0.35em;
-		font-size: 0.65em;
+		margin-top: 0.45em;
+		font-family: var(--mono);
+		font-size: 0.6em;
 		text-transform: uppercase;
 		letter-spacing: 0.12em;
 		color: var(--text-light);

@@ -1,8 +1,7 @@
 // Copy for the home page.
 //
-// The meme wall is deliberately not translated: the tiles are named after the
-// memes themselves, which are proper nouns, and the names are only ever read by
-// a screen reader on the placeholder tiles.
+// The meme wall is deliberately not translated: it is decoration, hidden from
+// assistive tech, and the tiles are named after the memes themselves.
 
 import type { Lang } from './index';
 
@@ -24,7 +23,8 @@ type HomeCopy = {
 	skillsTitle: string;
 	skills: SkillGroup[];
 	ctaTitle: string;
-	ctaHtml: string[];
+	ctaBody: string;
+	ctaActions: { linkedin: string; projects: string; cv: string; github: string };
 };
 
 export const home: Record<Lang, HomeCopy> = {
@@ -78,7 +78,11 @@ export const home: Record<Lang, HomeCopy> = {
 			{ group: 'Languages', items: ['TypeScript', 'JavaScript', 'PHP', 'Python', 'Rust', 'Go'] },
 			{ group: 'Frontend', items: ['React', 'Next.js', 'Vue.js', 'Tailwind CSS', 'HTML5', 'CSS3'] },
 			{ group: 'Backend', items: ['Node.js', 'Laravel', 'REST APIs', 'Spring Boot (intro)'] },
-			{ group: 'Databases', items: ['MySQL', 'PostgreSQL', 'Prisma ORM', 'Relational design'] },
+			{ group: 'Databases', items: ['MySQL', 'PostgreSQL', 'MongoDB', 'Prisma ORM', 'Relational design'] },
+			{
+				group: 'Testing',
+				items: ['Playwright', 'Selenium', 'End-to-end test infrastructure', 'Test-data seeding'],
+			},
 			{
 				group: 'Infrastructure / DevOps',
 				items: [
@@ -118,12 +122,14 @@ export const home: Record<Lang, HomeCopy> = {
 			},
 		],
 		ctaTitle: "Let's work together",
-		ctaHtml: [
-			`Looking for help on a project, a freelance engagement, or a full-time role?
-			 The fastest way is a DM on <a href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">LinkedIn</a>.`,
-			`You can also browse <a href="{projects}">my projects</a>
-			 or check out the code on <a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.`,
-		],
+		ctaBody:
+			'Looking for help on a project, a freelance engagement, or a full-time role? The fastest way to reach me is a DM on LinkedIn.',
+		ctaActions: {
+			linkedin: 'Message me on LinkedIn',
+			projects: 'Browse my projects',
+			cv: 'Read my CV',
+			github: 'Code on GitHub',
+		},
 	},
 	es: {
 		metaDescription:
@@ -178,7 +184,11 @@ export const home: Record<Lang, HomeCopy> = {
 			{ group: 'Lenguajes', items: ['TypeScript', 'JavaScript', 'PHP', 'Python', 'Rust', 'Go'] },
 			{ group: 'Frontend', items: ['React', 'Next.js', 'Vue.js', 'Tailwind CSS', 'HTML5', 'CSS3'] },
 			{ group: 'Backend', items: ['Node.js', 'Laravel', 'APIs REST', 'Spring Boot (intro)'] },
-			{ group: 'Bases de datos', items: ['MySQL', 'PostgreSQL', 'Prisma ORM', 'Diseño relacional'] },
+			{ group: 'Bases de datos', items: ['MySQL', 'PostgreSQL', 'MongoDB', 'Prisma ORM', 'Diseño relacional'] },
+			{
+				group: 'Testing',
+				items: ['Playwright', 'Selenium', 'Infraestructura de pruebas end-to-end', 'Seeding de datos de prueba'],
+			},
 			{
 				group: 'Infraestructura / DevOps',
 				items: [
@@ -218,11 +228,13 @@ export const home: Record<Lang, HomeCopy> = {
 			},
 		],
 		ctaTitle: 'Trabajemos juntos',
-		ctaHtml: [
-			`¿Buscás ayuda con un proyecto, una colaboración freelance o alguien a tiempo completo?
-			 Lo más rápido es un mensaje por <a href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">LinkedIn</a>.`,
-			`También podés mirar <a href="{projects}">mis proyectos</a>
-			 o revisar el código en <a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.`,
-		],
+		ctaBody:
+			'¿Buscás ayuda con un proyecto, una colaboración freelance o alguien a tiempo completo? Lo más rápido es escribirme por LinkedIn.',
+		ctaActions: {
+			linkedin: 'Escribime por LinkedIn',
+			projects: 'Ver mis proyectos',
+			cv: 'Leer mi CV',
+			github: 'Código en GitHub',
+		},
 	},
 };

@@ -261,7 +261,7 @@ main.cv-app {
 .cv-app #md-input {
 	flex: 1 1 auto;
 	min-height: 14rem;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-family: var(--mono);
 	font-size: 0.75rem;
 	overflow: auto;
 	resize: none;
@@ -439,7 +439,7 @@ main.cv-app {
 	border-color: var(--accent);
 }
 .cv-app .step kbd {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-family: var(--mono);
 	font-size: 0.72rem;
 	border: 1px solid var(--border);
 	border-bottom-width: 2px;
@@ -457,7 +457,7 @@ main.cv-app {
 .cv-app .prompt-box pre {
 	margin: 0;
 	padding: 0.75rem 0.85rem;
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-family: var(--mono);
 	font-size: 0.68rem;
 	line-height: 1.55;
 	white-space: pre-wrap;
@@ -659,7 +659,7 @@ main.cv-app {
 
 /* ── X-ray pane ───────────────────────────────────────────────────── */
 .cv-app .ats-text {
-	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-family: var(--mono);
 	font-size: 0.72rem;
 	line-height: 1.6;
 	white-space: pre-wrap;

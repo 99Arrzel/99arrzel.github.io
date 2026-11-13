@@ -1,9 +1,11 @@
 ---
 import { getCollection } from 'astro:content';
 import BaseHead from '../BaseHead.astro';
+import Docs from '../Docs.astro';
 import Footer from '../Footer.astro';
 import FormattedDate from '../FormattedDate.astro';
 import Header from '../Header.astro';
+import VaultMenu from '../VaultMenu.astro';
 import { SITE_TITLE } from '../../consts';
 import { VAULT_TOPICS } from '../../vault';
 import { vault, topicOrder } from '../../i18n/vault';
@@ -41,24 +43,18 @@ const topics = topicOrder
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>{c.title}</h1>
-			<p class="vault-intro">{c.intro}</p>
+		<main class="docs-page">
+			<header class="docs-head">
+				<h1>{c.title}</h1>
+				<p>{c.intro}</p>
+				{c.languageNote && entries.length > 0 && <p class="lang-note">{c.languageNote}</p>}
+			</header>
 
 			{entries.length === 0 ? (
 				<p class="empty">{c.empty}</p>
 			) : (
-				<>
-					{c.languageNote && <p class="lang-note">{c.languageNote}</p>}
-					<nav class="topic-nav" aria-label={c.navAria}>
-						{topics.map((t) => (
-							<a class="topic-chip" href={`#${t.id}`}>
-								<span aria-hidden="true">{t.icon}</span> {t.name}
-								<span class="count">{t.entries.length}</span>
-							</a>
-						))}
-					</nav>
-
+				<Docs label={c.title} mode="pages" current={c.allEntries}>
+					<VaultMenu slot="menu" lang={lang} />
 					{topics.map((t) => (
 						<section class="topic" id={t.id}>
 							<header class="topic-head">
@@ -78,7 +74,7 @@ const topics = topicOrder
 							</ul>
 						</section>
 					))}
-				</>
+				</Docs>
 			)}
 		</main>
 		<Footer />
@@ -86,52 +82,19 @@ const topics = topicOrder
 </html>
 
 <style>
-	.vault-intro {
-		margin: -0.25em 0 1.75em 0;
-		max-width: 65ch;
-		color: var(--text-light);
-	}
-	.lang-note {
-		margin: -1.25em 0 1.75em 0;
+	.docs-head .lang-note {
+		margin-top: 0.75em;
 		font-size: 0.85em;
 		font-style: italic;
-		color: var(--text-light);
 	}
 	.empty {
 		color: var(--text-light);
 	}
-	.topic-nav {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.5em;
-		margin-bottom: 2.5em;
-	}
-	.topic-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4em;
-		padding: 0.3em 0.75em;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		color: var(--text);
-		text-decoration: none;
-		font-size: 0.85em;
-		transition: border-color 0.2s ease, color 0.2s ease;
-	}
-	.topic-chip:hover {
-		border-color: var(--accent);
-		color: var(--accent);
-	}
-	.topic-chip .count {
-		color: var(--text-light);
-		font-size: 0.85em;
-		font-variant-numeric: tabular-nums;
-	}
 	.topic {
-		margin-bottom: 2.5em;
-		/* Land below the fixed header when jumped to via #anchor. */
-		scroll-margin-top: calc(var(--header-height) + 1em);
+		margin-bottom: 3.5em;
+	}
+	.topic:last-child {
+		margin-bottom: 0;
 	}
 	.topic-head {
 		margin-bottom: 1em;
@@ -140,7 +103,7 @@ const topics = topicOrder
 	}
 	.topic-head h2 {
 		margin: 0;
-		font-size: 1.5em;
+		font-size: 1.4em;
 	}
 	.topic-head p {
 		margin: 0.35em 0 0 0;
@@ -156,30 +119,48 @@ const topics = topicOrder
 		gap: 1em;
 	}
 	.entry-list a {
-		display: block;
-		padding: 1.2em;
+		display: flex;
+		flex-direction: column;
+		padding: 1.2em 1.4em;
 		background: var(--bg-secondary);
 		border: 1px solid var(--border);
-		border-radius: 8px;
+		border-radius: var(--radius);
 		text-decoration: none;
-		transition: border-color 0.2s ease;
+		transition:
+			border-color 0.2s ease,
+			transform 0.2s ease;
 	}
-	.entry-list a:hover {
+	.entry-list a:hover,
+	.entry-list a:focus-visible {
 		border-color: var(--accent);
+		transform: translateY(-2px);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.entry-list a {
+			transition: none;
+		}
 	}
 	.entry-title {
 		margin: 0;
 		color: var(--text-heading);
 		font-size: 1.2em;
 	}
+	/* Shown above the title, as the small label of the card; it stays after
+	   the heading in the markup so the title is still what a screen reader
+	   meets first. */
 	.entry-date {
-		margin: 0.25em 0 0 0;
+		order: -1;
+		margin: 0 0 0.6em;
+		font-family: var(--mono);
+		font-size: 0.66em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
 		color: var(--text-light);
-		font-size: 0.85em;
 	}
 	.entry-desc {
 		margin: 0.5em 0 0 0;
-		color: var(--text);
+		color: var(--text-light);
 		font-size: 0.92em;
+		line-height: 1.6;
 	}
 </style>

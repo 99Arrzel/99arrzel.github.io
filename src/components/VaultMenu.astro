@@ -1,0 +1,58 @@
+---
+// The Vault's menu: every entry, grouped by topic. It goes in the `menu` slot
+// of <Docs> on the index and on each entry, so the list on the left is the
+// same wherever you are in the archive and only the marked item moves.
+import { getCollection } from 'astro:content';
+import { VAULT_TOPICS } from '../vault';
+import { vault, topicOrder } from '../i18n/vault';
+import { localizePath, type Lang } from '../i18n';
+
+interface Props {
+	lang: Lang;
+	/** Id of the entry being read. Leave out on the index. */
+	current?: string;
+}
+
+const { lang, current } = Astro.props;
+const c = vault[lang];
+
+const entries = (await getCollection('vault', ({ data }) => !data.draft)).sort(
+	(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+);
+const topics = topicOrder
+	.map((id) => ({
+		id,
+		icon: VAULT_TOPICS[id].icon,
+		name: c.topics[id].name,
+		entries: entries.filter((e) => e.data.topic === id),
+	}))
+	.filter((t) => t.entries.length > 0);
+---
+
+<ul>
+	<li>
+		<a href={localizePath('/vault', lang)} aria-current={current ? undefined : 'page'}>
+			<span class="t">{c.allEntries}</span>
+			<span class="note">{entries.length}</span>
+		</a>
+	</li>
+</ul>
+{
+	topics.map((t) => (
+		<>
+			<p class="docs-group">
+				<span aria-hidden="true">{t.icon}</span> {t.name}
+			</p>
+			<ul>
+				{/* Unprefixed in both locales: the entries are only written once. */}
+				{t.entries.map((e) => (
+					<li>
+						<a href={`/vault/${e.id}/`} aria-current={e.id === current ? 'page' : undefined}>
+							<span class="t">{e.data.title}</span>
+						</a>
+					</li>
+				))}
+			</ul>
+		</>
+	))
+}

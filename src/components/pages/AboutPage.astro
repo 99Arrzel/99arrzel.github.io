@@ -3,11 +3,16 @@
 // and `src/pages/es/about.astro` are one-line wrappers around this, so the two
 // versions can never drift in structure — only in copy.
 import BaseHead from '../BaseHead.astro';
+import Docs from '../Docs.astro';
 import Footer from '../Footer.astro';
 import Header from '../Header.astro';
+import Pager from '../Pager.astro';
 import { SITE_TITLE } from '../../consts';
 import { about } from '../../i18n/about';
 import { localizePath, type Lang } from '../../i18n';
+import { DEFAULT_CV, DEFAULT_CV_ES } from '../../scripts/cv/default-cv';
+import { parseResume } from '../../scripts/cv/parse';
+import { inline } from '../../scripts/cv/render';
 
 interface Props {
 	lang: Lang;
@@ -17,6 +22,56 @@ const { lang } = Astro.props;
 const c = about[lang];
 const cv = localizePath('/cv', lang);
 const withCv = (html: string) => html.replaceAll('{cv}', cv);
+
+// Career and education come from the same document the CV page opens with,
+// parsed at build time, so this page can't fall behind it. Sections are found
+// by heading, in either language, the way the CV linter recognises them.
+const resume = parseResume(lang === 'es' ? DEFAULT_CV_ES : DEFAULT_CV);
+const entriesUnder = (heading: RegExp) => resume.sections.find((s) => heading.test(s.heading))?.entries ?? [];
+const jobs = entriesUnder(/experien/i);
+const degrees = entriesUnder(/educa|formaci/i);
+const period = (e: { start: string; end: string }) => [e.start, e.end].filter(Boolean).join(' — ');
+// "Jul 2025 — Present · Remote contract": when, then where.
+const when = (e: { start: string; end: string; meta: string }) => [period(e), e.meta].filter(Boolean).join(' · ');
+// An entry with no end date yet gets the lit dot on the timeline.
+const ongoing = (e: { end: string }) => /^(present|presente|actual|now|hoy)/i.test(e.end);
+// Where I am and what I speak, straight from the CV's header.
+const facts = [resume.profile.location, resume.profile.extra].filter(Boolean).join(' · ');
+
+// One section per menu item: the introduction, each job, then education and
+// contact. Company names are proper nouns, so the ids they give are the same
+// in both locales.
+const slug = (s: string) =>
+	s
+		.toLowerCase()
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/(^-|-$)/g, '');
+const jobItems = jobs.map((job) => ({
+	id: slug(job.org || job.role),
+	title: job.org || job.role,
+	// The year it started is enough to place it; the panel has the full dates.
+	note: job.start.match(/\d{4}/)?.[0] ?? '',
+	job,
+}));
+const menu = [
+	{ label: c.title, items: [{ id: 'intro', title: c.introTitle, note: '' }] },
+	{ label: c.experienceTitle, items: jobItems },
+	{
+		label: c.moreTitle,
+		items: [
+			{ id: 'education', title: c.educationTitle, note: '' },
+			{ id: 'contact', title: c.contactTitle, note: '' },
+		],
+	},
+];
+// The "previous / next" links walk the menu top to bottom.
+const order = menu.flatMap((g) => g.items);
+const neighbours = (id: string) => {
+	const i = order.findIndex((item) => item.id === id);
+	return { prev: order[i - 1], next: order[i + 1] };
+};
 ---
 
 <!doctype html>
@@ -26,57 +81,171 @@ const withCv = (html: string) => html.replaceAll('{cv}', cv);
 	</head>
 	<body>
 		<Header />
-		<main>
-			<h1>{c.title}</h1>
+		<main class="docs-page">
+			<header class="docs-head">
+				<h1>{c.title}</h1>
+				{facts && <p class="facts eyebrow">{facts}</p>}
+			</header>
 
-			{c.introHtml.map((html) => <p set:html={html} />)}
+			<Docs label={c.menuLabel} mode="panels">
+				<Fragment slot="menu">
+					{
+						menu.map((group) => (
+							<>
+								<p class="docs-group">{group.label}</p>
+								<ul>
+									{group.items.map((item) => (
+										<li>
+											<a href={`#${item.id}`}>
+												<span class="t">{item.title}</span>
+												{item.note && <span class="note">{item.note}</span>}
+											</a>
+										</li>
+									))}
+								</ul>
+							</>
+						))
+					}
+				</Fragment>
 
-			<h2>{c.experienceTitle}</h2>
-			<ul class="experience">
+				<section class="doc-panel" id="intro" tabindex="-1" aria-labelledby="intro-title">
+					<h2 class="doc-title" id="intro-title">{c.introTitle}</h2>
+					{c.introHtml.map((html) => <p set:html={html} />)}
+					<Pager {...neighbours('intro')} />
+				</section>
+
 				{
-					c.jobs.map((job) => (
-						<li>
-							<strong>{job.role}</strong> &middot; {job.company} &middot; {job.place}
-							<span class="period">{job.period}</span>
-							<p set:html={job.bodyHtml} />
-						</li>
+					jobItems.map(({ id, job }) => (
+						<section class="doc-panel" id={id} tabindex="-1" aria-labelledby={`${id}-title`}>
+							<p class="doc-eyebrow">
+								{ongoing(job) && <span class="live-dot" aria-hidden="true" />}
+								{when(job)}
+							</p>
+							<h2 class="doc-title" id={`${id}-title`}>
+								{job.role}
+							</h2>
+							<p class="doc-lede org">{job.org}</p>
+							<ul class="bullets">
+								{job.bullets.map((b) => (
+									<li set:html={inline(b)} />
+								))}
+							</ul>
+							<Pager {...neighbours(id)} />
+						</section>
 					))
 				}
-			</ul>
 
-			<h2>{c.educationTitle}</h2>
-			<ul>
-				{c.educationHtml.map((html) => <li set:html={html} />)}
-			</ul>
+				<section class="doc-panel" id="education" tabindex="-1" aria-labelledby="education-title">
+					<h2 class="doc-title" id="education-title">{c.educationTitle}</h2>
+					<ol class="timeline">
+						{
+							degrees.map((d) => (
+								<li class:list={{ ongoing: ongoing(d) }}>
+									<p class="when eyebrow">{when(d)}</p>
+									<h3>{d.role}</h3>
+									<p class="org">{d.org}</p>
+								</li>
+							))
+						}
+					</ol>
+					<Pager {...neighbours('education')} />
+				</section>
 
-			<h2>{c.contactTitle}</h2>
-			{c.contactHtml.map((html) => <p set:html={withCv(html)} />)}
+				<section class="doc-panel" id="contact" tabindex="-1" aria-labelledby="contact-title">
+					<h2 class="doc-title" id="contact-title">{c.contactTitle}</h2>
+					{c.contactHtml.map((html) => <p set:html={withCv(html)} />)}
+					<Pager {...neighbours('contact')} />
+				</section>
+			</Docs>
 		</main>
 		<Footer />
 	</body>
 </html>
 
 <style>
-	.experience {
-		list-style: none;
-		padding: 0;
+	.docs-head .facts {
+		margin-top: 0.6em;
+		line-height: 1.7;
+	}
+	.doc-panel .doc-title {
+		margin-bottom: 0.6em;
+	}
+	/* A job: the role is the title, the company sits under it in the accent. */
+	.doc-panel .org {
+		margin-top: -0.6em;
+		color: var(--accent);
+	}
+	/* Green means "still there". */
+	.live-dot {
+		display: inline-block;
+		width: 0.6em;
+		height: 0.6em;
+		margin-right: 0.6em;
+		border-radius: 50%;
+		background: #22c55e;
+		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
+	}
+	.bullets {
 		margin: 0;
+		padding-left: 1.1em;
+		line-height: 1.65;
 	}
-	.experience > li {
-		padding: 1em 0;
-		border-bottom: 1px solid var(--border);
+	.bullets li + li {
+		margin-top: 0.6em;
 	}
-	.experience > li:last-child {
-		border-bottom: none;
+	.bullets li::marker {
+		color: #5b6470;
 	}
-	.experience .period {
-		display: block;
-		color: var(--text-light);
-		font-size: 0.9em;
-		margin-top: 0.15em;
+	/* Bold inside a bullet comes from the CV's own markdown. */
+	.bullets :global(strong) {
+		color: var(--text-heading);
+		font-weight: 600;
 	}
-	.experience p {
-		margin: 0.6em 0 0 0;
-		color: var(--text-light);
+	/* A rail down the left with a dot per entry; the one still running is lit. */
+	.timeline {
+		list-style: none;
+		margin: 0 0 0 0.3em;
+		padding: 0;
+	}
+	.timeline > li {
+		position: relative;
+		padding: 0 0 2.2em 1.6em;
+		border-left: 1px solid var(--border);
+	}
+	/* The rail stops at the last dot instead of trailing off below it. */
+	.timeline > li:last-child {
+		padding-bottom: 0;
+		border-left-color: transparent;
+	}
+	.timeline > li::before {
+		content: "";
+		position: absolute;
+		top: 0.3em;
+		left: 0;
+		width: 0.55em;
+		height: 0.55em;
+		box-sizing: border-box;
+		border: 2px solid var(--text-light);
+		border-radius: 50%;
+		background: var(--bg);
+		transform: translateX(calc(-50% - 0.5px));
+	}
+	.timeline > li.ongoing::before {
+		border-color: #22c55e;
+		background: #22c55e;
+		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
+	}
+	.timeline .when {
+		margin: 0 0 0.5em;
+		line-height: 1.6;
+	}
+	.timeline h3 {
+		margin: 0;
+		font-size: 1.1em;
+	}
+	.timeline .org {
+		margin: 0.1em 0 0;
+		color: var(--accent);
+		font-size: 0.93em;
 	}
 </style>

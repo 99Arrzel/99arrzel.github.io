@@ -2,15 +2,24 @@
 import { Image } from 'astro:assets';
 import type { CollectionEntry } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
+import Docs from '../components/Docs.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
+import VaultMenu from '../components/VaultMenu.astro';
 import { SITE_TITLE } from '../consts';
 import { VAULT_TOPICS } from '../vault';
 
-type Props = CollectionEntry<'vault'>['data'];
+type Neighbour = { title: string; href: string };
+type Props = CollectionEntry<'vault'>['data'] & {
+	/** The entry's id, so the menu can mark it. */
+	id: string;
+	minutes: number;
+	newer?: Neighbour;
+	older?: Neighbour;
+};
 
-const { title, description, pubDate, updatedDate, topic, heroImage } = Astro.props;
+const { id, title, description, pubDate, updatedDate, topic, heroImage, minutes, newer, older } = Astro.props;
 const topicMeta = VAULT_TOPICS[topic];
 ---
 
@@ -21,14 +30,14 @@ const topicMeta = VAULT_TOPICS[topic];
 	</head>
 	<body>
 		<Header />
-		<main>
+		<main class="docs-page">
+			<!-- Entries are English-only, so is the menu beside them. -->
+			<Docs label="The Vault" mode="pages" current={title}>
+			<VaultMenu slot="menu" lang="en" current={id} />
 			<article class="entry">
-				<div class="entry-top">
-					<a class="back" href="/vault">&larr; The Vault</a>
-					<a class="topic-badge" href={`/vault#${topic}`}>
-						<span aria-hidden="true">{topicMeta.icon}</span> {topicMeta.name}
-					</a>
-				</div>
+				<a class="topic-badge" href={`/vault#${topic}`}>
+					<span aria-hidden="true">{topicMeta.icon}</span> {topicMeta.name}
+				</a>
 				<h1>{title}</h1>
 				<p class="meta">
 					<FormattedDate date={pubDate} />
@@ -37,6 +46,7 @@ const topicMeta = VAULT_TOPICS[topic];
 							<span class="updated"> &middot; updated <FormattedDate date={updatedDate} /></span>
 						)
 					}
+					<span> &middot; {minutes} min read</span>
 				</p>
 				{heroImage && (
 					<div class="hero">
@@ -47,27 +57,35 @@ const topicMeta = VAULT_TOPICS[topic];
 				<div class="prose">
 					<slot />
 				</div>
+				{
+					(newer || older) && (
+						<nav class="neighbours" aria-label="More from the Vault">
+							{older && (
+								<a class="older" href={older.href}>
+									<span>&larr; Older</span>
+									{older.title}
+								</a>
+							)}
+							{newer && (
+								<a class="newer" href={newer.href}>
+									<span>Newer &rarr;</span>
+									{newer.title}
+								</a>
+							)}
+						</nav>
+					)
+				}
 			</article>
+			</Docs>
 		</main>
 		<Footer />
 	</body>
 </html>
 
 <style>
-	.entry-top {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1em;
-		margin-bottom: 1.5em;
-	}
-	.back {
-		color: var(--text-light);
-		text-decoration: none;
-		font-size: 0.9em;
-	}
-	.back:hover {
-		color: var(--accent);
+	/* The column the entries were written for; the pane itself is wider. */
+	.entry {
+		max-width: 720px;
 	}
 	.topic-badge {
 		display: inline-flex;
@@ -77,21 +95,26 @@ const topicMeta = VAULT_TOPICS[topic];
 		background: var(--bg-secondary);
 		border: 1px solid var(--border);
 		border-radius: 999px;
-		color: var(--accent);
+		color: var(--text);
 		text-decoration: none;
 		font-size: 0.8em;
 		white-space: nowrap;
+		margin-bottom: 1.25em;
+		transition: border-color 0.2s ease;
 	}
 	.topic-badge:hover {
 		border-color: var(--accent);
 	}
 	h1 {
-		margin: 0 0 0.25em 0;
+		margin: 0 0 0.4em 0;
 	}
 	.meta {
-		margin: 0 0 1.25em 0;
+		margin: 0 0 1.75em 0;
+		font-family: var(--mono);
+		font-size: 0.68em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
 		color: var(--text-light);
-		font-size: 0.9em;
 	}
 	.hero {
 		margin: 0 0 1.5em 0;
@@ -108,9 +131,56 @@ const topicMeta = VAULT_TOPICS[topic];
 	/* The rendered markdown. Global rules in global.css already style headings,
 	   paragraphs, code, blockquotes and (responsively) images inside here. */
 	.prose :global(h2) {
-		margin-top: 1.5em;
+		margin: 2em 0 0.6em;
+		font-size: 1.5em;
 	}
 	.prose :global(h3) {
-		margin-top: 1.25em;
+		margin: 1.6em 0 0.5em;
+		font-size: 1.2em;
+	}
+	/* Somewhere to go at the end of an entry other than back up. */
+	.neighbours {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1em;
+		margin-top: 3em;
+		padding-top: 1.5em;
+		border-top: 1px solid var(--border);
+	}
+	.neighbours a {
+		padding: 0.9em 1.1em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		color: var(--text-heading);
+		font-size: 0.9em;
+		line-height: 1.4;
+		text-decoration: none;
+		transition: border-color 0.2s ease;
+	}
+	.neighbours a:hover {
+		border-color: var(--accent);
+	}
+	.neighbours span {
+		display: block;
+		margin-bottom: 0.5em;
+		font-family: var(--mono);
+		font-size: 0.72em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: var(--text-light);
+	}
+	/* The newer entry keeps the right-hand column even when there is no older one. */
+	.neighbours .newer {
+		grid-column: 2;
+		text-align: right;
+	}
+	@media (max-width: 720px) {
+		.neighbours {
+			grid-template-columns: 1fr;
+		}
+		.neighbours .newer {
+			grid-column: 1;
+		}
 	}
 </style>

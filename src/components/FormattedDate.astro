@@ -1,14 +1,19 @@
 ---
+import { getLangFromUrl } from '../i18n';
+
 interface Props {
 	date: Date;
 }
 
 const { date } = Astro.props;
+// In the language of the page it's on: the Spanish Vault index lists English
+// posts, but the dates beside them are chrome and read in Spanish.
+const locale = getLangFromUrl(Astro.url) === 'es' ? 'es' : 'en-us';
 ---
 
 <time datetime={date.toISOString()}>
 	{
-		date.toLocaleDateString('en-us', {
+		date.toLocaleDateString(locale, {
 			year: 'numeric',
 			month: 'short',
 			day: 'numeric',

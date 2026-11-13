@@ -13,45 +13,61 @@ interface Props {
 
 const { lang } = Astro.props;
 const c = home[lang];
-const withLinks = (html: string) => html.replaceAll('{projects}', localizePath('/projects', lang));
 
-// Sad LATAM memes for the wall. `src` is a GIF URL; if null, a labeled placeholder
-// tile renders so the layout stays solid until real GIFs are wired in. The names
-// are the memes' own, so they read the same in both locales.
+// Sad LATAM memes for the wall. Everything is a muted looping MP4 except the one
+// Tenor clip, which only exists as a GIF: Giphy's MP4 rendition of a clip is
+// about a seventh the size of its GIF. `w`/`h` reserve each tile's box before
+// anything loads, so the columns don't reshuffle as clips arrive and the page
+// script can tell which tiles are actually on screen. The names are the memes'
+// own and are documentation only; the wall is decorative and hidden from
+// assistive tech.
+const giphy = (id: string) => `https://media.giphy.com/media/${id}/giphy.mp4`;
 const wallTiles = [
-	{ name: 'Cooper crying (Interstellar)', src: 'https://media.giphy.com/media/l3vR4CdLInXOhr3rO/giphy.gif' },
-	{ name: 'El Chavo llorando',       src: 'https://media.giphy.com/media/3o6nUZ2uG6JKaUL5xC/giphy.gif' },
-	{ name: 'Spider-Man depression',   src: 'https://media.giphy.com/media/XeSUAqI8uGTxL145ut/giphy.gif' },
-	{ name: 'Pablo Escobar esperando', src: 'https://media.giphy.com/media/xIdtUuXvkhn4NlJ4Uf/giphy.gif' },
-	{ name: 'Walter White',            src: 'https://media.giphy.com/media/l0HU8V1CHKTUFtuFO/giphy.gif' },
-	{ name: 'Joker crying hysterically', src: 'https://media.tenor.com/-vpfZLAXAwkAAAAM/crying-hysterically-crying-meme.gif' },
-	{ name: 'BoJack',                  src: 'https://media.giphy.com/media/xT9DPwaYSIlFMqQBYA/giphy.gif' },
-	{ name: 'Don Ramón triste',        src: 'https://media.giphy.com/media/Md0hqYn50MoklMF10F/giphy.gif' },
-	{ name: 'Inside Out Sadness',      src: 'https://media.giphy.com/media/avvZ3Y5ucf09a/giphy.gif' },
-	{ name: 'Sad Kermit',              src: 'https://media.giphy.com/media/AhLswQtOFWP2MFPqYn/giphy.gif' },
-	{ name: 'Thanos impossible',       src: '/masonry/thanos-impossible.mp4' },
-	{ name: 'Pedro Pascal triste',     src: 'https://media.giphy.com/media/EOEtX31UeW98gFHiok/giphy.gif' },
-	{ name: 'Sad Frodo',               src: 'https://media.giphy.com/media/TaMtN8VaLu4wM/giphy.gif' },
-	{ name: 'Sad SpongeBob',           src: 'https://media.giphy.com/media/ISOckXUybVfQ4/giphy.gif' },
-	{ name: 'Squidward window',        src: 'https://media.giphy.com/media/8T1CY9YYb9JsrrVVzn/giphy.gif' },
-	{ name: 'Crying Jordan',           src: 'https://media.giphy.com/media/3o6EhNnoVpx2LbfVnO/giphy.gif' },
-	{ name: 'Joker tercermundista',    src: '/masonry/locura-tik-tok-joker-tercermundista.mp4' },
-	{ name: 'Sad Detective Pikachu',   src: 'https://media.giphy.com/media/SHP92Zpivx9Pfr1geG/giphy.gif' },
-	{ name: 'Sad Keanu',               src: 'https://media.giphy.com/media/IdYUzn025MwLJnEKLV/giphy.gif' },
-	{ name: 'Sad Pepe the Frog',       src: 'https://media.giphy.com/media/wA7JI5LRuqbIQYck3N/giphy.gif' },
-	{ name: 'Sad Bart Simpson',        src: 'https://media.giphy.com/media/AzAa23iNkA5I6jQKmG/giphy.gif' },
-	{ name: 'Michael Scott NOOO',      src: 'https://media.giphy.com/media/xTEnPv5x4FCBpHgAas/giphy.gif' },
-	{ name: 'Papu XD',                 src: '/masonry/papu-xd.mp4' },
-	{ name: 'SDLG papu',               src: '/masonry/sdlg-papu.mp4' },
-	{ name: 'Social credit SpongeBob', src: '/masonry/social-credit-sad-spongebob.mp4' },
-	{ name: 'Kobayashi Dragon Maid',   src: '/masonry/spongebob-kobayashi-dragon-maid.mp4' },
+	{ name: 'Cooper crying (Interstellar)', src: giphy('l3vR4CdLInXOhr3rO'), w: 480, h: 270 },
+	{ name: 'El Chavo llorando', src: giphy('3o6nUZ2uG6JKaUL5xC'), w: 480, h: 270 },
+	{ name: 'Spider-Man depression', src: giphy('XeSUAqI8uGTxL145ut'), w: 480, h: 202 },
+	{ name: 'Pablo Escobar esperando', src: giphy('xIdtUuXvkhn4NlJ4Uf'), w: 480, h: 480 },
+	{ name: 'Walter White', src: giphy('l0HU8V1CHKTUFtuFO'), w: 480, h: 270 },
+	{ name: 'Joker crying hysterically', src: 'https://media.tenor.com/-vpfZLAXAwkAAAAM/crying-hysterically-crying-meme.gif', w: 220, h: 392 },
+	{ name: 'BoJack', src: giphy('xT9DPwaYSIlFMqQBYA'), w: 480, h: 288 },
+	{ name: 'Don Ramón triste', src: giphy('Md0hqYn50MoklMF10F'), w: 450, h: 450 },
+	{ name: 'Inside Out Sadness', src: giphy('avvZ3Y5ucf09a'), w: 480, h: 270 },
+	{ name: 'Sad Kermit', src: giphy('AhLswQtOFWP2MFPqYn'), w: 480, h: 270 },
+	{ name: 'Thanos impossible', src: '/masonry/thanos-impossible.mp4', w: 480, h: 280 },
+	{ name: 'Pedro Pascal triste', src: giphy('EOEtX31UeW98gFHiok'), w: 480, h: 480 },
+	{ name: 'Sad Frodo', src: giphy('TaMtN8VaLu4wM'), w: 480, h: 208 },
+	{ name: 'Sad SpongeBob', src: giphy('ISOckXUybVfQ4'), w: 480, h: 324 },
+	{ name: 'Squidward window', src: giphy('8T1CY9YYb9JsrrVVzn'), w: 480, h: 320 },
+	{ name: 'Crying Jordan', src: giphy('3o6EhNnoVpx2LbfVnO'), w: 320, h: 320 },
+	{ name: 'Joker tercermundista', src: '/masonry/locura-tik-tok-joker-tercermundista.mp4', w: 480, h: 480 },
+	{ name: 'Sad Detective Pikachu', src: giphy('SHP92Zpivx9Pfr1geG'), w: 480, h: 480 },
+	{ name: 'Sad Keanu', src: giphy('IdYUzn025MwLJnEKLV'), w: 480, h: 480 },
+	{ name: 'Sad Pepe the Frog', src: giphy('wA7JI5LRuqbIQYck3N'), w: 480, h: 302 },
+	{ name: 'Sad Bart Simpson', src: giphy('AzAa23iNkA5I6jQKmG'), w: 382, h: 382 },
+	{ name: 'Michael Scott NOOO', src: giphy('xTEnPv5x4FCBpHgAas'), w: 480, h: 270 },
+	{ name: 'Papu XD', src: '/masonry/papu-xd.mp4', w: 480, h: 542 },
+	{ name: 'SDLG papu', src: '/masonry/sdlg-papu.mp4', w: 480, h: 360 },
+	{ name: 'Social credit SpongeBob', src: '/masonry/social-credit-sad-spongebob.mp4', w: 480, h: 268 },
+	{ name: 'Kobayashi Dragon Maid', src: '/masonry/spongebob-kobayashi-dragon-maid.mp4', w: 480, h: 270 },
 ];
+
+// Who this site is about, for search engines.
+const person = {
+	'@context': 'https://schema.org',
+	'@type': 'Person',
+	name: SITE_TITLE,
+	url: new URL('/', Astro.site).href,
+	jobTitle: 'Full-stack engineer',
+	address: { '@type': 'PostalAddress', addressLocality: 'Buenos Aires', addressCountry: 'AR' },
+	sameAs: ['https://github.com/99Arrzel', 'https://linkedin.com/in/99arrzel'],
+};
 ---
 
 <!doctype html>
 <html lang={lang}>
 	<head>
 		<BaseHead title={SITE_TITLE} description={c.metaDescription} />
+		<script is:inline type="application/ld+json" set:html={JSON.stringify(person)} />
 	</head>
 	<body>
 		<Header />
@@ -59,34 +75,34 @@ const wallTiles = [
 			<section class="wall" aria-label={c.wallAria}>
 				<div class="wall-masonry" aria-hidden="true">
 					{wallTiles.map((tile, i) => (
-						<div class={`tile ${tile.src ? '' : 'placeholder'}`} style={`--seed: ${i};`}>
-							{!tile.src ? (
-								<span class="tile-label">{tile.name}</span>
-							) : tile.src.endsWith('.mp4') ? (
-								<video src={tile.src} autoplay loop muted playsinline preload="metadata"></video>
+						<div class="tile" style={`--seed: ${i}; aspect-ratio: ${tile.w} / ${tile.h};`}>
+							{tile.src.endsWith('.mp4') ? (
+								<video data-src={tile.src} loop muted playsinline preload="none"></video>
 							) : (
-								<img src={tile.src} alt="" loading="lazy" />
+								<img src={tile.src} alt="" loading="lazy" decoding="async" />
 							)}
 						</div>
 					))}
 				</div>
 				<div class="wall-content">
-					<p class="wall-intro" set:html={c.introHtml} />
-					<section class="countdown" aria-label={c.countdownAria}>
-						<p class="countdown-label">{c.countdownLabel}</p>
-						<div class="countdown-grid" id="countdown">
-							<div class="unit"><span class="num" data-unit="months">--</span><span class="lbl">{c.units.months}</span></div>
-							<div class="unit"><span class="num" data-unit="days">--</span><span class="lbl">{c.units.days}</span></div>
-							<div class="unit"><span class="num" data-unit="hours">--</span><span class="lbl">{c.units.hours}</span></div>
-							<div class="unit"><span class="num" data-unit="minutes">--</span><span class="lbl">{c.units.minutes}</span></div>
-							<div class="unit"><span class="num" data-unit="seconds">--</span><span class="lbl">{c.units.seconds}</span></div>
-						</div>
-						<p class="countdown-foot">{c.countdownFoot}</p>
-					</section>
-					<p class="availability">
-						<span class="dot" aria-hidden="true"></span>
-						{c.availability}
-					</p>
+					<div class="panel">
+						<h1 class="wall-intro" set:html={c.introHtml} />
+						<section class="countdown" aria-label={c.countdownAria}>
+							<p class="countdown-label">{c.countdownLabel}</p>
+							<div class="countdown-grid" id="countdown">
+								<div class="unit"><span class="num" data-unit="months">--</span><span class="lbl">{c.units.months}</span></div>
+								<div class="unit"><span class="num" data-unit="days">--</span><span class="lbl">{c.units.days}</span></div>
+								<div class="unit"><span class="num" data-unit="hours">--</span><span class="lbl">{c.units.hours}</span></div>
+								<div class="unit"><span class="num" data-unit="minutes">--</span><span class="lbl">{c.units.minutes}</span></div>
+								<div class="unit"><span class="num" data-unit="seconds">--</span><span class="lbl">{c.units.seconds}</span></div>
+							</div>
+							<p class="countdown-foot">{c.countdownFoot}</p>
+						</section>
+						<p class="availability">
+							<span class="dot" aria-hidden="true"></span>
+							{c.availability}
+						</p>
+					</div>
 				</div>
 				<a class="scroll-hint" href="#life">
 					<span>{c.scrollHint}</span>
@@ -98,36 +114,47 @@ const wallTiles = [
 
 			<section id="work" class="services">
 				<h2>{c.servicesTitle}</h2>
-				<div class="services-grid">
-					{c.services.map((s) => (
-						<div class="service-card">
-							<h3>{s.title}</h3>
-							<p>{s.body}</p>
-							<div class="tag-row">
-								{s.tags.map((t) => <span class="tag">{t}</span>)}
+				<ol class="service-list">
+					{c.services.map((s, i) => (
+						<li class="service">
+							<span class="service-num" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+							<div>
+								<h3>{s.title}</h3>
+								<p>{s.body}</p>
+								<div class="tag-row">
+									{s.tags.map((t) => <span class="tag">{t}</span>)}
+								</div>
 							</div>
-						</div>
+						</li>
 					))}
-				</div>
+				</ol>
 			</section>
 
 			<section class="skills">
 				<h2>{c.skillsTitle}</h2>
-				<div class="skills-grid">
+				<dl class="skill-list">
 					{c.skills.map((group) => (
-						<div class="skill-group">
-							<h3>{group.group}</h3>
-							<div class="tag-row">
+						<div class="skill-row">
+							<dt class="eyebrow">{group.group}</dt>
+							<dd class="tag-row">
 								{group.items.map((item) => <span class="tag">{item}</span>)}
-							</div>
+							</dd>
 						</div>
 					))}
-				</div>
+				</dl>
 			</section>
 
 			<section class="cta">
 				<h2>{c.ctaTitle}</h2>
-				{c.ctaHtml.map((html) => <p set:html={withLinks(html)} />)}
+				<p>{c.ctaBody}</p>
+				<div class="cta-actions">
+					<a class="btn primary" href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">
+						{c.ctaActions.linkedin} <span aria-hidden="true">&rarr;</span>
+					</a>
+					<a class="btn" href={localizePath('/projects', lang)}>{c.ctaActions.projects}</a>
+					<a class="btn" href={localizePath('/cv', lang)}>{c.ctaActions.cv}</a>
+					<a class="btn" href="https://github.com/99Arrzel" target="_blank" rel="noopener">{c.ctaActions.github}</a>
+				</div>
 			</section>
 		</main>
 		<Footer />
@@ -171,6 +198,31 @@ const wallTiles = [
 				tick();
 				setInterval(tick, 1000);
 			})();
+			// The wall: fetch a clip only once its tile is really on screen, and
+			// stop decoding it when it isn't. Tiles below the hero's bottom edge
+			// are clipped away and never intersect, so they never download; and
+			// once the hero scrolls out of view nothing is left playing behind
+			// the rest of the page.
+			(function () {
+				const clips = document.querySelectorAll('.wall-masonry video');
+				// With reduced motion the clip still loads, but stays on its first
+				// frame: the fragment makes Safari paint one without playing.
+				const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+				const io = new IntersectionObserver((entries) => {
+					for (const { target: clip, isIntersecting } of entries) {
+						if (!isIntersecting) {
+							clip.pause();
+							continue;
+						}
+						if (!clip.src) {
+							clip.preload = 'auto';
+							clip.src = clip.dataset.src + (still ? '#t=0.001' : '');
+						}
+						if (!still) clip.play().catch(() => {});
+					}
+				});
+				clips.forEach((clip) => io.observe(clip));
+			})();
 		</script>
 	</body>
 </html>
@@ -180,6 +232,9 @@ const wallTiles = [
 	.wall {
 		position: relative;
 		height: 100vh;
+		/* Where supported: the height with the phone's address bar showing, so
+		   the scroll hint at the bottom isn't hidden behind the browser chrome. */
+		height: 100svh;
 		width: 100vw;
 		margin-left: calc(50% - 50vw);
 		margin-right: calc(50% - 50vw);
@@ -187,11 +242,31 @@ const wallTiles = [
 		   transparent fixed header (full-bleed). Must match the main
 		   top padding in global.css. */
 		margin-top: calc(-1 * var(--header-height) - 1.5em);
-		margin-bottom: 4em;
+		margin-bottom: 3em;
 		padding: 0;
 		overflow: hidden;
 		isolation: isolate;
 		background: #0a0a10;
+	}
+	/* Two jobs in one layer between the memes and the panel: pull the eye to
+	   the middle, and melt the bottom of the wall into the page so the hero
+	   ends in a fade rather than a hard edge. */
+	.wall::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		background:
+			radial-gradient(ellipse 60% 55% at 50% 46%, rgba(8, 10, 14, 0.5), transparent 75%),
+			linear-gradient(
+				to bottom,
+				rgba(13, 17, 23, 0.5) 0,
+				transparent 16%,
+				transparent 58%,
+				rgba(13, 17, 23, 0.85) 86%,
+				var(--bg) 100%
+			);
 	}
 	.wall-masonry {
 		column-count: 4;
@@ -201,176 +276,175 @@ const wallTiles = [
 	.wall-masonry .tile {
 		break-inside: avoid;
 		margin-bottom: 0.5em;
-		border-radius: 8px;
+		border-radius: 10px;
 		overflow: hidden;
 		position: relative;
 		background: hsl(calc(var(--seed, 0) * 47deg + 220deg) 14% 12%);
 	}
-	.wall-masonry .tile.placeholder {
-		min-height: 220px;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-	}
+	/* The tile's box comes from its inline aspect-ratio; the clip fills it.
+	   Clips sit back a little so the panel reads first; the one under the
+	   cursor comes forward. */
 	.wall-masonry .tile img,
 	.wall-masonry .tile video {
 		width: 100%;
-		height: auto;
+		height: 100%;
+		object-fit: cover;
 		display: block;
+		border-radius: 0;
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
 	}
-	.wall-masonry .tile-label {
-		position: relative;
-		z-index: 1;
-		padding: 0.5em 0.9em;
-		font-size: 0.78em;
-		color: rgba(255,255,255,0.45);
-		text-align: center;
-		font-style: italic;
-		letter-spacing: 0.02em;
-		line-height: 1.35;
+	.wall-masonry .tile:hover img,
+	.wall-masonry .tile:hover video {
+		opacity: 1;
 	}
 	.wall-content {
 		position: absolute;
 		inset: 0;
 		z-index: 2;
 		display: flex;
-		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 1.25em;
-		text-align: center;
-		padding: 2em 1em;
+		padding: calc(var(--header-height) + 1em) 1em 4.5em;
 		pointer-events: none;
 	}
-	.wall-content > * {
+	/* One pane of glass for everything the hero says, instead of four
+	   separate badges competing with the memes behind them. */
+	.panel {
 		pointer-events: auto;
+		width: 100%;
+		max-width: 660px;
+		padding: 1.5em 1.75em 1.15em;
+		text-align: center;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 22px;
+		background: linear-gradient(180deg, rgba(20, 24, 33, 0.7), rgba(10, 12, 18, 0.8));
+		backdrop-filter: blur(18px) saturate(150%);
+		-webkit-backdrop-filter: blur(18px) saturate(150%);
+		box-shadow:
+			0 30px 80px rgba(0, 0, 0, 0.55),
+			inset 0 1px 0 rgba(255, 255, 255, 0.08);
 	}
 	.wall-intro {
 		margin: 0;
-		padding: 0.5em 1em;
-		font-size: 0.95em;
-		color: rgba(255,255,255,0.85);
-		letter-spacing: 0.02em;
-		background: rgba(15, 15, 20, 0.55);
-		backdrop-filter: blur(8px);
-		border: 1px solid rgba(255,255,255,0.1);
-		border-radius: 999px;
+		font-size: 1.1em;
+		font-weight: 400;
+		line-height: 1.5;
+		letter-spacing: 0;
+		color: rgba(255, 255, 255, 0.8);
 	}
-	.wall-intro strong {
+	.wall-intro :global(strong) {
 		color: #fff;
-		font-weight: 600;
+		font-weight: 700;
 	}
+	.countdown {
+		margin: 1.25em 0 0;
+		padding-top: 1.25em;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.countdown-label {
+		margin: 0 0 1em;
+		font-family: var(--mono);
+		font-size: 0.68em;
+		text-transform: uppercase;
+		letter-spacing: 0.24em;
+		color: rgba(255, 255, 255, 0.55);
+	}
+	.countdown-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+	}
+	.countdown .unit {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0.25em;
+	}
+	.countdown .unit + .unit {
+		border-left: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.countdown .num {
+		font-family: var(--mono);
+		font-size: clamp(1.9em, 6vw, 3em);
+		font-weight: 600;
+		color: #fff;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		font-variant-numeric: tabular-nums;
+	}
+	.countdown .lbl {
+		margin-top: 0.7em;
+		font-family: var(--mono);
+		font-size: 0.6em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: rgba(255, 255, 255, 0.5);
+	}
+	.countdown-foot {
+		margin: 1.1em 0 0;
+		font-size: 0.85em;
+		font-style: italic;
+		color: rgba(255, 255, 255, 0.55);
+	}
+	/* Inline, so when the line wraps on a phone the dot stays with the first
+	   word instead of drifting out to the panel's edge. */
+	.availability {
+		margin: 1.15em 0 0;
+		padding-top: 1em;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		font-size: 0.85em;
+		line-height: 1.4;
+		color: rgba(255, 255, 255, 0.85);
+		text-wrap: balance;
+	}
+	.availability .dot {
+		display: inline-block;
+		width: 0.55em;
+		height: 0.55em;
+		margin-right: 0.5em;
+		vertical-align: 0.08em;
+		border-radius: 50%;
+		background: #22c55e;
+		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
+	}
+	/* No badge of its own: the wall has already faded to the page colour down
+	   here, which is all the backing the label needs. */
 	.scroll-hint {
 		position: absolute;
-		bottom: 1.25em;
+		bottom: 1em;
 		left: 50%;
 		transform: translateX(-50%);
 		z-index: 3;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 0.3em;
-		padding: 0.5em 1em;
-		background: rgba(15, 15, 20, 0.25);
-		backdrop-filter: blur(16px) saturate(180%);
-		-webkit-backdrop-filter: blur(16px) saturate(180%);
-		border: 1px solid rgba(255,255,255,0.06);
-		border-radius: 999px;
-		color: rgba(255,255,255,0.75);
+		gap: 0.2em;
+		padding: 0.4em 1em;
+		color: rgba(255, 255, 255, 0.7);
 		text-decoration: none;
-		font-size: 0.8em;
-		letter-spacing: 0.08em;
+		font-family: var(--mono);
+		font-size: 0.66em;
+		letter-spacing: 0.16em;
 		text-transform: uppercase;
 		/* It's absolutely positioned with left:50%, which otherwise caps its
-		   width at half the viewport and forces the label to wrap into a blob. */
+		   width at half the viewport and forces the label to wrap. */
 		white-space: nowrap;
-		transition: color 0.2s ease, background 0.2s ease;
-	}
-	.scroll-hint:hover {
-		background: rgba(15, 15, 20, 0.45);
+		transition: color 0.2s ease;
 	}
 	.scroll-hint:hover {
 		color: #fff;
 	}
 	.scroll-hint .arrow {
 		font-size: 1.5em;
+		line-height: 1;
 		animation: bob 1.8s ease-in-out infinite;
 	}
 	@keyframes bob {
 		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(6px); }
+		50% { transform: translateY(5px); }
 	}
-	.availability {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5em;
-		padding: 0.4em 0.85em;
-		background: rgba(255,255,255,0.06);
-		border: 1px solid rgba(255,255,255,0.12);
-		border-radius: 999px;
-		font-size: 0.9em;
-		color: rgba(255,255,255,0.85);
-		margin: 0;
-		backdrop-filter: blur(4px);
-	}
-	.availability .dot {
-		display: inline-block;
-		width: 0.55em;
-		height: 0.55em;
-		border-radius: 50%;
-		background: #22c55e;
-		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
-	}
-	.countdown {
-		margin: 0;
-		padding: 1.75em 1.5em;
-		border: 1px solid rgba(255,255,255,0.12);
-		border-radius: 12px;
-		background: rgba(15, 15, 20, 0.55);
-		backdrop-filter: blur(8px);
-		text-align: center;
-		width: 100%;
-		max-width: 640px;
-	}
-	.countdown-label {
-		margin: 0 0 0.85em 0;
-		font-size: 0.78em;
-		text-transform: uppercase;
-		letter-spacing: 0.22em;
-		color: rgba(255,255,255,0.55);
-	}
-	.countdown-grid {
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
-		gap: 0.5em;
-	}
-	.countdown .unit {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 0.5em 0.25em;
-	}
-	.countdown .num {
-		font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-		font-size: clamp(1.8em, 6vw, 2.8em);
-		font-weight: 600;
-		color: #fff;
-		line-height: 1;
-		font-variant-numeric: tabular-nums;
-		text-shadow: 0 2px 12px rgba(0,0,0,0.5);
-	}
-	.countdown .lbl {
-		margin-top: 0.5em;
-		font-size: 0.7em;
-		text-transform: uppercase;
-		letter-spacing: 0.14em;
-		color: rgba(255,255,255,0.55);
-	}
-	.countdown-foot {
-		margin: 1em 0 0 0;
-		font-size: 0.88em;
-		font-style: italic;
-		color: rgba(255,255,255,0.55);
+	@media (prefers-reduced-motion: reduce) {
+		.scroll-hint .arrow { animation: none; }
 	}
 	@media (min-width: 1600px) {
 		.wall-masonry { column-count: 5; }
@@ -380,102 +454,112 @@ const wallTiles = [
 	}
 	@media (max-width: 640px) {
 		.wall-masonry { column-count: 2; }
-		.countdown .num { font-size: clamp(1.4em, 7vw, 2em); }
+		.panel { padding: 1.25em 1em 1em; border-radius: 18px; }
+		.countdown .num { font-size: clamp(1.4em, 7.5vw, 2em); }
 		/* Spanish unit names ("segundos", "minutos") are longer than the English
 		   ones and were wrapping inside their column; drop the tracking and let
 		   them shrink a touch further so all five stay on one line. */
-		.countdown .lbl { font-size: 0.55em; letter-spacing: 0.04em; }
+		.countdown .lbl { font-size: 0.5em; letter-spacing: 0.02em; }
 	}
-	.services {
-		margin-bottom: 3em;
+
+	/* ===== The sections under the hero ===== */
+	.services,
+	.skills {
+		margin-bottom: 4.5em;
 	}
 	.services h2,
-	.skills h2,
-	.cta h2 {
-		font-size: 1.5em;
-		margin-bottom: 1em;
+	.skills h2 {
+		margin-bottom: 0.9em;
 	}
-	.services-grid {
+	/* Numbered rows rather than a grid of boxes: five long descriptions read
+	   better at full column width than squeezed two abreast. */
+	.service-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		border-bottom: 1px solid var(--border);
+	}
+	.service {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.25em;
+		grid-template-columns: 2.6em 1fr;
+		gap: 0 0.75em;
+		padding: 1.5em 0;
+		border-top: 1px solid var(--border);
 	}
-	.service-card {
-		padding: 1.25em 1.5em;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border);
-		border-radius: 8px;
-		transition: border-color 0.2s ease;
+	.service-num {
+		font-family: var(--mono);
+		font-size: 0.75em;
+		color: var(--accent);
+		/* Sits on the title's baseline. */
+		padding-top: 0.42em;
 	}
-	.service-card:hover {
-		border-color: var(--accent);
+	.service h3 {
+		margin: 0 0 0.4em;
+		font-size: 1.2em;
 	}
-	.service-card h3 {
-		margin: 0 0 0.4em 0;
-		font-size: 1.1em;
-		color: var(--text-heading);
-	}
-	.service-card p {
-		margin: 0 0 0.85em 0;
+	.service p {
+		margin: 0 0 0.9em;
 		color: var(--text-light);
 		font-size: 0.93em;
-		line-height: 1.55;
+		line-height: 1.6;
 	}
-	.skills {
-		margin-bottom: 3em;
+	/* A label column and its tags, one hairline per group. */
+	.skill-list {
+		margin: 0;
+		border-bottom: 1px solid var(--border);
 	}
-	.skills-grid {
+	.skill-row {
 		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1.25em;
+		grid-template-columns: 12.5em 1fr;
+		gap: 1em;
+		align-items: baseline;
+		padding: 0.85em 0;
+		border-top: 1px solid var(--border);
 	}
-	.skill-group {
-		padding: 1em 1.25em;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border);
-		border-radius: 8px;
+	.skill-row dt {
+		line-height: 1.6;
 	}
-	.skill-group h3 {
-		margin: 0 0 0.6em 0;
-		font-size: 0.95em;
-		color: var(--accent);
-		text-transform: uppercase;
-		letter-spacing: 0.04em;
+	.skill-row dd {
+		margin: 0;
 	}
 	.tag-row {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.4em;
 	}
+	/* Neutral on purpose. Blue is for things you can click. */
 	.tag {
-		padding: 0.2em 0.6em;
-		background: var(--bg);
+		padding: 0.15em 0.6em;
+		background: rgba(255, 255, 255, 0.04);
 		border: 1px solid var(--border);
-		border-radius: 4px;
-		font-size: 0.78em;
-		color: var(--accent);
+		border-radius: 6px;
+		font-size: 0.76em;
+		color: var(--text);
 	}
 	.cta {
-		padding: 1.75em;
-		background: var(--bg-secondary);
-		border: 1px solid var(--border);
-		border-radius: 8px;
+		padding: 2.25em;
+		border: 1px solid rgba(109, 159, 255, 0.3);
+		border-radius: 18px;
+		background:
+			radial-gradient(120% 140% at 100% 0%, rgba(109, 159, 255, 0.2), transparent 55%),
+			var(--bg-secondary);
+	}
+	.cta h2 {
+		margin-bottom: 0.4em;
+		font-size: 2em;
+		letter-spacing: -0.025em;
 	}
 	.cta p {
-		margin: 0 0 0.6em 0;
+		margin: 0 0 1.5em;
+		max-width: 34em;
+		color: var(--text);
 	}
-	.cta p:last-child {
-		margin-bottom: 0;
+	.cta-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6em;
 	}
 	@media (max-width: 720px) {
-		.services-grid,
-		.skills-grid {
-			grid-template-columns: 1fr;
-			gap: 1em;
-		}
-		.hero h1 {
-			font-size: 2em;
-		}
 		/* On phones the full-bleed-under-header trick just clips the top row of
 		   memes behind the bar. Sit the hero flush *below* the header instead
 		   (-1.5em cancels the extra breathing room in main's top padding so the
@@ -483,12 +567,31 @@ const wallTiles = [
 		.wall {
 			margin-top: -1.5em;
 			height: calc(100vh - var(--header-height));
+			height: calc(100svh - var(--header-height));
 		}
-		/* These badges wrap to two lines on narrow screens; the pill (999px)
-		   radius then balloons into a blob, so round them like cards instead. */
-		.wall-intro,
-		.availability {
-			border-radius: 14px;
+		.wall-content {
+			padding-top: 1em;
+		}
+		.services,
+		.skills {
+			margin-bottom: 3.5em;
+		}
+		/* The label goes above its tags; the number above its title. */
+		.skill-row {
+			grid-template-columns: 1fr;
+			gap: 0.5em;
+		}
+		.service {
+			grid-template-columns: 1fr;
+		}
+		.service-num {
+			padding: 0 0 0.3em;
+		}
+		.cta {
+			padding: 1.5em;
+		}
+		.cta h2 {
+			font-size: 1.7em;
 		}
 	}
 </style>

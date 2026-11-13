@@ -1,0 +1,250 @@
+/*
+  The two-pane shell behind Projects, the Vault, Interviews and About: a menu
+  down the left, the thing you picked on the right. Markup comes from
+  `src/components/Docs.astro`; the menu and the panels are slotted in by each
+  page, which is why these rules are global rather than scoped.
+*/
+
+/* Wider than a column of prose: the menu needs its own room. */
+main.docs-page {
+	width: 1160px;
+}
+
+/* Page title and intro, above both panes. */
+.docs-head {
+	max-width: 44em;
+	margin-bottom: 2.5em;
+}
+.docs-head h1 {
+	margin-bottom: 0.3em;
+}
+.docs-head p {
+	margin: 0;
+	color: var(--text-light);
+}
+
+.docs {
+	display: grid;
+	grid-template-columns: 13em minmax(0, 1fr);
+	gap: 3.5em;
+	align-items: start;
+}
+
+/* ── The menu ─────────────────────────────────────────────────────── */
+.docs-side {
+	position: sticky;
+	top: calc(var(--header-height) + 1.5em);
+	max-height: calc(100vh - var(--header-height) - 3em);
+	overflow-y: auto;
+	scrollbar-width: thin;
+	font-size: 0.8em;
+}
+/* Only exists on a phone, where the menu folds away behind it. */
+.docs-toggle {
+	display: none;
+}
+.docs-group {
+	margin: 0 0 0.7em;
+	font-family: var(--mono);
+	font-size: 0.82em;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	color: var(--text-light);
+}
+.docs-menu ul {
+	list-style: none;
+	margin: 0 0 1.75em;
+	padding: 0;
+	border-left: 1px solid var(--border);
+}
+.docs-menu ul:last-child {
+	margin-bottom: 0;
+}
+.docs-menu a {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 0.75em;
+	/* Sits on the list's rule, so the current item's bar replaces a stretch
+	   of it instead of running alongside. */
+	margin-left: -1px;
+	padding: 0.4em 0.75em 0.4em 0.95em;
+	border-left: 2px solid transparent;
+	border-radius: 0 8px 8px 0;
+	color: var(--text-light);
+	line-height: 1.35;
+	text-decoration: none;
+	transition:
+		color 0.15s ease,
+		background 0.15s ease;
+}
+.docs-menu a:hover {
+	color: var(--text-heading);
+	background: rgba(255, 255, 255, 0.04);
+}
+.docs-menu a[aria-current] {
+	border-left-color: var(--accent);
+	background: linear-gradient(90deg, var(--accent-soft), transparent);
+	color: var(--text-heading);
+}
+/* The small fact on the right of an item: a year, a topic, a count. */
+.docs-menu .note {
+	flex: none;
+	font-family: var(--mono);
+	font-size: 0.82em;
+	color: var(--text-light);
+}
+
+/* ── The pane ─────────────────────────────────────────────────────── */
+.docs-body {
+	min-width: 0;
+	max-width: 44em;
+}
+.doc-panel {
+	outline: none;
+}
+.doc-panel[hidden] {
+	display: none;
+}
+/* Without scripting every panel is on the page at once and the menu is a
+   list of anchors, so the panels need telling apart. */
+html:not(.docs-js) .doc-panel + .doc-panel {
+	margin-top: 3.5em;
+	padding-top: 3em;
+	border-top: 1px solid var(--border);
+}
+/* What every panel opens with: a small label, a title, one line of summary. */
+.doc-eyebrow {
+	margin: 0 0 0.9em;
+	font-family: var(--mono);
+	font-size: 0.68em;
+	text-transform: uppercase;
+	letter-spacing: 0.14em;
+	line-height: 1.6;
+	color: var(--text-light);
+}
+.doc-title {
+	margin: 0 0 0.35em;
+	font-size: 2.1em;
+	font-weight: 800;
+	letter-spacing: -0.03em;
+	line-height: 1.1;
+}
+.doc-lede {
+	margin: 0 0 1.5em;
+	font-size: 1.15em;
+	line-height: 1.5;
+	color: var(--text-heading);
+}
+
+/* Previous / next, at the foot of a panel: a way on that isn't back up to
+   the menu. */
+.pager {
+	display: flex;
+	justify-content: space-between;
+	gap: 1em;
+	margin-top: 3em;
+	padding-top: 1.25em;
+	border-top: 1px solid var(--border);
+	font-size: 0.85em;
+}
+.pager a {
+	color: var(--text-light);
+	text-decoration: none;
+}
+.pager a:hover {
+	color: var(--accent);
+}
+/* With every panel on the page there is nothing to page between. */
+html:not(.docs-js) .pager {
+	display: none;
+}
+
+@media (max-width: 900px) {
+	.docs {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 1.75em;
+	}
+	/* The menu becomes a bar that follows you down the page, under the site
+	   header, and opens over the content. Pulled out to the screen edges
+	   (main has 1em of padding either side). */
+	.docs-side {
+		top: var(--header-height);
+		z-index: 50;
+		max-height: none;
+		overflow: visible;
+		margin: 0 -1em;
+		padding: 0.6em 1em;
+		border-bottom: 1px solid var(--border);
+		background: rgba(13, 17, 23, 0.92);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
+		font-size: 0.9em;
+	}
+	.docs-toggle:not([hidden]) {
+		display: flex;
+		align-items: center;
+		gap: 0.6em;
+		width: 100%;
+		padding: 0.55em 0.9em;
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		background: var(--bg-secondary);
+		color: var(--text-heading);
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.docs-toggle .docs-label {
+		flex: none;
+		font-family: var(--mono);
+		font-size: 0.72em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: var(--text-light);
+	}
+	.docs-toggle .docs-current {
+		flex: 1;
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-weight: 600;
+	}
+	.docs-toggle .docs-chevron {
+		flex: none;
+		color: var(--text-light);
+		transition: transform 0.2s ease;
+	}
+	.docs-side.is-open .docs-chevron {
+		transform: rotate(180deg);
+	}
+	/* Folded away once the script has taken over; without it the whole menu
+	   simply stays on the page. */
+	.docs-js .docs-menu {
+		display: none;
+	}
+	.docs-js .docs-side.is-open .docs-menu {
+		display: block;
+		max-height: 60vh;
+		overflow-y: auto;
+		padding-top: 1em;
+	}
+	.docs-menu a {
+		padding-top: 0.55em;
+		padding-bottom: 0.55em;
+	}
+	/* A link straight to a panel has to land it below that bar, not under it. */
+	.doc-panel {
+		scroll-margin-top: 4.5em;
+	}
+	.doc-title {
+		font-size: 1.8em;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.docs-menu a,
+	.docs-toggle .docs-chevron {
+		transition: none;
+	}
+}

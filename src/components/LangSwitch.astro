@@ -41,6 +41,10 @@ const alt = switchTargets(Astro.url);
 		} catch (err) {
 			/* private mode — the link still navigates */
 		}
+		// Panel ids on the docs-style pages are the same in both languages, so
+		// carrying the hash across lands on the same project or question
+		// instead of back at the first one.
+		if (location.hash && a.hash !== location.hash) a.hash = location.hash;
 	});
 </script>
 

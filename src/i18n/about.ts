@@ -3,26 +3,26 @@
 // Values ending in `Html` carry inline markup (links, <em>) and are rendered
 // with set:html; everything else is plain text. Keeping the two apart means a
 // translator can see at a glance which strings have tags to preserve.
+//
+// The jobs and degrees are not here: the page reads them out of the CV seed
+// (`src/scripts/cv/default-cv.ts`), so there is one career history to keep up
+// to date rather than two that drift.
 
 import type { Lang } from './index';
-
-type Job = {
-	role: string;
-	company: string;
-	place: string;
-	period: string;
-	bodyHtml: string;
-};
 
 type AboutCopy = {
 	metaTitle: string;
 	metaDescription: string;
 	title: string;
+	/** Names the menu of sections. */
+	menuLabel: string;
+	/** Heading of the opening section, and its name in the menu. */
+	introTitle: string;
 	introHtml: string[];
 	experienceTitle: string;
-	jobs: Job[];
 	educationTitle: string;
-	educationHtml: string[];
+	/** Menu heading over the sections that come after the jobs. */
+	moreTitle: string;
 	contactTitle: string;
 	contactHtml: string[];
 };
@@ -32,6 +32,8 @@ export const about: Record<Lang, AboutCopy> = {
 		metaTitle: 'About',
 		metaDescription: 'About Andres Carrillo - full-stack engineer based in Buenos Aires',
 		title: 'About me',
+		menuLabel: 'Sections',
+		introTitle: 'In short',
 		introHtml: [
 			`I'm a full-stack engineer based in Buenos Aires, originally from Santa Cruz, Bolivia.
 			 I've spent the last 3+ years shipping production web apps end-to-end &mdash; currently at
@@ -49,61 +51,8 @@ export const about: Record<Lang, AboutCopy> = {
 			 manual attendance tracking (so I built a barcode-scanning system).`,
 		],
 		experienceTitle: 'Experience',
-		jobs: [
-			{
-				role: 'Full Stack Engineer',
-				company: 'PostReminder',
-				place: 'Remote (San Francisco, CA)',
-				period: 'Jul 2025 — Present',
-				bodyHtml: `Migrated a legacy PHP product to a Next.js 16 / React 19 / TypeScript monorepo
-					(Turborepo + Bun). Designed the AWS deployment pipeline (GitHub Actions &rarr; ECR
-					&rarr; ECS via CloudFormation). Own MySQL/Prisma schema and migrations. Built a
-					two-layer authorization system combining RBAC with plan-based entitlements,
-					synced via Stripe checkout, proration, and webhooks. Authored security and
-					compliance documentation for the team.`,
-			},
-			{
-				role: 'Frontend Web Developer',
-				company: 'Alvind',
-				place: 'Hybrid (Santa Cruz, Bolivia)',
-				period: 'May 2025 — Feb 2026 (Part-time)',
-				bodyHtml: `Maintained and shipped features for an e-commerce storefront on Next.js,
-					integrated with BigCommerce for catalog/checkout and Prismic for headless content.
-					Improved storefront performance across product, cart, and checkout flows.`,
-			},
-			{
-				role: 'Full Stack Engineer',
-				company: 'Gometrixs',
-				place: 'On-site (Santa Cruz, Bolivia)',
-				period: 'Jun 2024 — Apr 2025',
-				bodyHtml: `Tech-led <em>Trippin</em>, a new product spun out of Viacon &mdash; owned architecture
-					decisions and end-to-end delivery across frontend and backend. Coordinated a small
-					team, defined coding standards, ran code reviews, and onboarded contributors.`,
-			},
-			{
-				role: 'Full Stack Engineer',
-				company: 'Viacon Tours',
-				place: 'On-site (Santa Cruz, Bolivia)',
-				period: 'Sep 2023 — Apr 2024',
-				bodyHtml: `Built and maintained internal tools and customer-facing features for a tour
-					operator using PHP, React, and MySQL. Introduced engineering standards and
-					mentored peers as the team modernized parts of the stack toward AWS, Next.js,
-					and Laravel.`,
-			},
-			{
-				role: 'Full Stack Engineer',
-				company: 'Freelance',
-				place: 'Remote',
-				period: 'Feb 2023 — Jul 2023',
-				bodyHtml: `Built full-stack projects in Laravel + Vue for various clients; first hands-on
-					exposure to Spring Boot architecture.`,
-			},
-		],
 		educationTitle: 'Education',
-		educationHtml: [
-			`<strong>Universidad Franz Tamayo</strong> &middot; Systems Engineering &middot; 2020&ndash;2024 <em>(coursework complete, thesis pending)</em>`,
-			`<strong>University of Buenos Aires (UBA)</strong> &middot; Computer Science, Exactas &middot; 2018&ndash;2019`,
-		],
+		moreTitle: 'And also',
 		contactTitle: 'Get in touch',
 		contactHtml: [
 			`Find me on <a href="https://github.com/99arrzel" target="_blank">GitHub</a>
@@ -117,6 +66,8 @@ export const about: Record<Lang, AboutCopy> = {
 		metaTitle: 'Sobre mí',
 		metaDescription: 'Sobre Andres Carrillo — ingeniero full-stack radicado en Buenos Aires',
 		title: 'Sobre mí',
+		menuLabel: 'Secciones',
+		introTitle: 'En resumen',
 		introHtml: [
 			`Soy ingeniero full-stack radicado en Buenos Aires, originario de Santa Cruz, Bolivia.
 			 Pasé los últimos 3+ años lanzando aplicaciones web de punta a punta en producción &mdash;
@@ -135,62 +86,8 @@ export const about: Record<Lang, AboutCopy> = {
 			 de códigos de barras).`,
 		],
 		experienceTitle: 'Experiencia',
-		jobs: [
-			{
-				role: 'Ingeniero Full Stack',
-				company: 'PostReminder',
-				place: 'Remoto (San Francisco, CA)',
-				period: 'Jul 2025 — Presente',
-				bodyHtml: `Migré un producto PHP heredado a un monorepo Next.js 16 / React 19 / TypeScript
-					(Turborepo + Bun). Diseñé el pipeline de despliegue en AWS (GitHub Actions &rarr; ECR
-					&rarr; ECS vía CloudFormation). Me hago cargo del esquema y las migraciones de
-					MySQL/Prisma. Construí un sistema de autorización de dos capas que combina RBAC con
-					permisos según el plan contratado, sincronizados vía checkout, prorrateo y webhooks de
-					Stripe. Escribí la documentación de seguridad y cumplimiento del equipo.`,
-			},
-			{
-				role: 'Desarrollador Web Frontend',
-				company: 'Alvind',
-				place: 'Híbrido (Santa Cruz, Bolivia)',
-				period: 'May 2025 — Feb 2026 (Medio tiempo)',
-				bodyHtml: `Mantuve y lancé funcionalidades para una tienda de e-commerce en Next.js,
-					integrada con BigCommerce para catálogo y checkout, y con Prismic como CMS headless.
-					Mejoré el rendimiento de la tienda en los flujos de producto, carrito y checkout.`,
-			},
-			{
-				role: 'Ingeniero Full Stack',
-				company: 'Gometrixs',
-				place: 'Presencial (Santa Cruz, Bolivia)',
-				period: 'Jun 2024 — Abr 2025',
-				bodyHtml: `Lideré técnicamente <em>Trippin</em>, un producto nuevo desprendido de Viacon &mdash;
-					a cargo de las decisiones de arquitectura y de la entrega de punta a punta, tanto en
-					frontend como en backend. Coordiné un equipo chico, definí los estándares de código,
-					hice revisiones e incorporé a nuevos colaboradores.`,
-			},
-			{
-				role: 'Ingeniero Full Stack',
-				company: 'Viacon Tours',
-				place: 'Presencial (Santa Cruz, Bolivia)',
-				period: 'Sep 2023 — Abr 2024',
-				bodyHtml: `Construí y mantuve herramientas internas y funcionalidades de cara al cliente para
-					un operador turístico, con PHP, React y MySQL. Introduje estándares de ingeniería y
-					acompañé a mis compañeros mientras el equipo modernizaba parte del stack hacia AWS,
-					Next.js y Laravel.`,
-			},
-			{
-				role: 'Ingeniero Full Stack',
-				company: 'Freelance',
-				place: 'Remoto',
-				period: 'Feb 2023 — Jul 2023',
-				bodyHtml: `Construí proyectos full-stack en Laravel + Vue para distintos clientes; mi primer
-					contacto práctico con la arquitectura de Spring Boot.`,
-			},
-		],
 		educationTitle: 'Formación',
-		educationHtml: [
-			`<strong>Universidad Franz Tamayo</strong> &middot; Ingeniería de Sistemas &middot; 2020&ndash;2024 <em>(materias completas, tesis pendiente)</em>`,
-			`<strong>Universidad de Buenos Aires (UBA)</strong> &middot; Ciencias de la Computación, Exactas &middot; 2018&ndash;2019`,
-		],
+		moreTitle: 'Y además',
 		contactTitle: 'Contacto',
 		contactHtml: [
 			`Me encontrás en <a href="https://github.com/99arrzel" target="_blank">GitHub</a>

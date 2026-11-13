@@ -1,0 +1,106 @@
+---
+// A menu on the left, what you picked on the right: the shell Projects, the
+// Vault, Interviews and About all sit in, laid out like API documentation.
+//
+// Two ways to use it:
+//
+//   mode="panels"  Everything is on one page. Each menu link is `#some-id` and
+//                  each thing it opens is a `<section class="doc-panel"
+//                  id="some-id">` in the default slot. Only the chosen panel is
+//                  shown; the choice lives in the URL hash, so a panel can be
+//                  linked to and the back button walks through them.
+//   mode="pages"   Each menu link is a real URL and the default slot is just
+//                  that page's content. Mark the current link with
+//                  `aria-current="page"` and pass its title as `current`.
+//
+// The menu goes in `slot="menu"`: `<p class="docs-group">` headings, each
+// followed by a `<ul>` of links. A link's text goes in `<span class="t">`; an
+// optional `<span class="note">` puts a year or a topic on the right.
+//
+// Styles are in src/styles/docs.css. Pages put `class="docs-page"` on their
+// <main> to get the wider column.
+import '../styles/docs.css';
+
+interface Props {
+	/** Names the menu: for screen readers, and on the phone-sized toggle. */
+	label: string;
+	mode: 'panels' | 'pages';
+	/** Title of the page being shown. Only needed in "pages" mode. */
+	current?: string;
+}
+
+const { label, mode, current = '' } = Astro.props;
+---
+
+<div class="docs" data-docs={mode}>
+	<aside class="docs-side">
+		<button class="docs-toggle" type="button" aria-expanded="false" aria-controls="docs-menu" hidden>
+			<span class="docs-label">{label}</span>
+			<span class="docs-current">{current}</span>
+			<span class="docs-chevron" aria-hidden="true">&#9662;</span>
+		</button>
+		<nav class="docs-menu" id="docs-menu" aria-label={label}>
+			<slot name="menu" />
+		</nav>
+	</aside>
+	<div class="docs-body">
+		<slot />
+	</div>
+</div>
+<!-- Inline, and directly after the markup it drives, so the right panel is
+     chosen before the first paint: a deferred script would show every panel
+     stacked for a moment and then collapse them. With scripting off nothing
+     here runs, all the panels stay visible and the menu is a list of anchors. -->
+<script is:inline>
+	(function () {
+		const root = document.currentScript.previousElementSibling;
+		const side = root.querySelector('.docs-side');
+		const toggle = root.querySelector('.docs-toggle');
+		const current = root.querySelector('.docs-current');
+		const links = Array.from(root.querySelectorAll('.docs-menu a'));
+
+		document.documentElement.classList.add('docs-js');
+		toggle.hidden = false;
+		const setOpen = (open) => {
+			side.classList.toggle('is-open', open);
+			toggle.setAttribute('aria-expanded', String(open));
+		};
+		toggle.addEventListener('click', () => setOpen(!side.classList.contains('is-open')));
+		if (root.dataset.docs !== 'panels') return;
+
+		const panels = Array.from(root.querySelectorAll('.doc-panel'));
+		const fromHash = () => decodeURIComponent(location.hash.slice(1));
+		// Shows one panel (the first, for a hash that names none) and marks its
+		// menu link.
+		function show(id) {
+			const panel = panels.find((p) => p.id === id) || panels[0];
+			for (const p of panels) p.hidden = p !== panel;
+			for (const a of links) {
+				if (decodeURIComponent(a.hash.slice(1)) === panel.id) {
+					a.setAttribute('aria-current', 'true');
+					current.textContent = (a.querySelector('.t') || a).textContent.trim();
+				} else {
+					a.removeAttribute('aria-current');
+				}
+			}
+			setOpen(false);
+			return panel;
+		}
+		// Any in-page link to a panel switches to it, wherever the link is: the
+		// menu, or a "next" link inside another panel.
+		root.addEventListener('click', (e) => {
+			const a = e.target.closest('a[href^="#"]');
+			const id = a && decodeURIComponent(a.hash.slice(1));
+			if (!id || !panels.some((p) => p.id === id)) return;
+			e.preventDefault();
+			if (id !== fromHash()) history.pushState(null, '', a.hash);
+			const panel = show(id);
+			// If the reader had scrolled down the previous panel, start this one
+			// from its top.
+			if (root.getBoundingClientRect().top < 0) root.scrollIntoView();
+			panel.focus({ preventScroll: true });
+		});
+		addEventListener('popstate', () => show(fromHash()));
+		show(fromHash());
+	})();
+</script>

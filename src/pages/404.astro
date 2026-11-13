@@ -1,0 +1,108 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+import { langs, localizePath } from '../i18n';
+import { notFound } from '../i18n/not-found';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`${notFound.en.metaTitle} | ${SITE_TITLE}`} description={notFound.en.metaDescription} />
+		<meta name="robots" content="noindex" />
+		<!-- One file answers for every missing URL, in either locale (see
+		     i18n/not-found.ts). Both languages are in the page; this picks the
+		     one the address was asking for before anything paints. -->
+		<script is:inline>
+			if (location.pathname.indexOf('/es/') === 0) document.documentElement.lang = 'es';
+		</script>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<video class="clip" src="/masonry/thanos-impossible.mp4" width="480" height="280" autoplay loop muted playsinline
+			></video>
+			<p class="code" aria-hidden="true">404</p>
+			{
+				langs.map((l) => (
+					<section class="copy" lang={l}>
+						<h1>{notFound[l].title}</h1>
+						<p>{notFound[l].body}</p>
+						<p class="links">
+							<a class="primary" href={localizePath('/', l)}>
+								{notFound[l].home}
+							</a>
+							<a href={localizePath('/projects', l)}>{notFound[l].projects}</a>
+							<a href={localizePath('/vault', l)}>{notFound[l].vault}</a>
+						</p>
+					</section>
+				))
+			}
+		</main>
+		<Footer />
+		<script is:inline>
+			if (matchMedia('(prefers-reduced-motion: reduce)').matches) document.querySelector('.clip').pause();
+		</script>
+	</body>
+</html>
+
+<style>
+	main {
+		min-height: 60vh;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+	}
+	.clip {
+		width: 320px;
+		max-width: 100%;
+		height: auto;
+		border-radius: 8px;
+		border: 1px solid var(--border);
+	}
+	.code {
+		margin: 1.2em 0 0;
+		font-family: var(--mono);
+		font-size: 0.8em;
+		letter-spacing: 0.3em;
+		color: var(--text-light);
+	}
+	h1 {
+		margin: 0.2em 0 0.4em;
+		font-size: 2em;
+	}
+	.copy p {
+		margin: 0;
+		color: var(--text-light);
+	}
+	.copy .links {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		align-items: center;
+		gap: 0.5em 1.25em;
+		margin-top: 1.5em;
+		font-size: 0.9em;
+	}
+	.primary {
+		padding: 0.45em 1.1em;
+		border-radius: 999px;
+		background: var(--accent);
+		color: #0d1117;
+		font-weight: 700;
+		text-decoration: none;
+	}
+	.primary:hover {
+		background: var(--accent-dark);
+		color: #0d1117;
+	}
+	/* Only the language the script chose (English by default) is shown. */
+	:global(html[lang='en']) .copy[lang='es'],
+	:global(html[lang='es']) .copy[lang='en'] {
+		display: none;
+	}
+</style>

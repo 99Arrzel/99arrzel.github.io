@@ -17,7 +17,8 @@ type VaultCopy = {
 	title: string;
 	intro: string;
 	empty: string;
-	navAria: string;
+	/** The menu item that leads back to the index. */
+	allEntries: string;
 	/** Shown above the entry list when the archive isn't in the reader's language. */
 	languageNote?: string;
 	topics: Record<VaultTopicId, TopicCopy>;
@@ -31,7 +32,7 @@ export const vault: Record<Lang, VaultCopy> = {
 		intro:
 			'A personal archive. Half notes-to-future-me, half showing how things are done — thoughts on software, existential detours, the occasional how-to, and whatever else I want to be able to reread later.',
 		empty: 'Nothing in here yet. Check back soon.',
-		navAria: 'Vault topics',
+		allEntries: 'All entries',
 		topics: {
 			engineering: {
 				name: 'Engineering',
@@ -63,7 +64,7 @@ export const vault: Record<Lang, VaultCopy> = {
 		intro:
 			'Un archivo personal. Mitad notas para el yo del futuro, mitad mostrar cómo se hacen las cosas: ideas sobre software, desvíos existenciales, alguna que otra guía práctica, y cualquier cosa que quiera poder releer más adelante.',
 		empty: 'Todavía no hay nada acá. Volvé pronto.',
-		navAria: 'Temas de la Bóveda',
+		allEntries: 'Todas las entradas',
 		languageNote: 'Las entradas están escritas en inglés.',
 		topics: {
 			engineering: {

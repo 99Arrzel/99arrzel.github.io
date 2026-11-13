@@ -3,18 +3,23 @@ import { type CollectionEntry, getCollection, render } from 'astro:content';
 import VaultEntry from '../../layouts/VaultEntry.astro';
 
 export async function getStaticPaths() {
-	const entries = await getCollection('vault', ({ data }) => !data.draft);
-	return entries.map((entry) => ({
+	const entries = (await getCollection('vault', ({ data }) => !data.draft)).sort(
+		(a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf(),
+	);
+	const link = (e?: CollectionEntry<'vault'>) => e && { title: e.data.title, href: `/vault/${e.id}/` };
+	// Newest first, so the entry before this one in the list is the newer one.
+	return entries.map((entry, i) => ({
 		params: { slug: entry.id },
-		props: entry,
+		props: { entry, newer: link(entries[i - 1]), older: link(entries[i + 1]) },
 	}));
 }
-type Props = CollectionEntry<'vault'>;
 
-const entry = Astro.props;
+const { entry, newer, older } = Astro.props;
 const { Content } = await render(entry);
+// At an unhurried 200 words a minute, counted on the markdown source.
+const minutes = Math.max(1, Math.round((entry.body ?? '').split(/\s+/).filter(Boolean).length / 200));
 ---
 
-<VaultEntry {...entry.data}>
+<VaultEntry {...entry.data} id={entry.id} minutes={minutes} newer={newer} older={older}>
 	<Content />
 </VaultEntry>

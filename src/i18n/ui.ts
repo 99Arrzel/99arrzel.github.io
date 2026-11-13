@@ -14,6 +14,10 @@ export const ui = {
 		'nav.interviews': 'Interviews',
 		'nav.about': 'About',
 		'nav.github': 'GitHub',
+		'nav.linkedin': 'LinkedIn',
+		'nav.cv': 'CV',
+		'nav.rss': 'RSS',
+		'nav.skip': 'Skip to content',
 
 		'lang.label': 'Language',
 		'lang.switchTo': 'Ver en español',
@@ -30,6 +34,10 @@ export const ui = {
 		'nav.interviews': 'Entrevistas',
 		'nav.about': 'Sobre mí',
 		'nav.github': 'GitHub',
+		'nav.linkedin': 'LinkedIn',
+		'nav.cv': 'CV',
+		'nav.rss': 'RSS',
+		'nav.skip': 'Saltar al contenido',
 
 		'lang.label': 'Idioma',
 		'lang.switchTo': 'View in English',

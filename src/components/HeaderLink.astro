@@ -13,16 +13,7 @@ const section = (p: string) => '/' + (p.match(/[^\/]+/g)?.[0] ?? '');
 const isActive = target === pathname || (target !== '/' && target === section(pathname));
 ---
 
-<a href={href} class:list={[className, { active: isActive }]} {...props}>
+<!-- Styled by the header it sits in; this only decides which link is current. -->
+<a href={href} class:list={[className, { active: isActive }]} aria-current={isActive ? 'page' : undefined} {...props}>
 	<slot />
 </a>
-<style>
-	a {
-		display: inline-block;
-		text-decoration: none;
-	}
-	a.active {
-		font-weight: bolder;
-		text-decoration: underline;
-	}
-</style>

@@ -1,0 +1,32 @@
+---
+// "Previous / next" at the foot of a panel inside <Docs mode="panels">: a way
+// on that isn't back up to the menu. Each side is a panel's id and the name to
+// show for it; leave one out at either end of the list. Styled by docs.css.
+type Target = { id: string; title: string };
+
+interface Props {
+	prev?: Target;
+	next?: Target;
+}
+
+const { prev, next } = Astro.props;
+---
+
+<nav class="pager">
+	{
+		prev ? (
+			<a href={`#${prev.id}`}>
+				<span aria-hidden="true">&larr;</span> {prev.title}
+			</a>
+		) : (
+			<span />
+		)
+	}
+	{
+		next && (
+			<a href={`#${next.id}`}>
+				{next.title} <span aria-hidden="true">&rarr;</span>
+			</a>
+		)
+	}
+</nav>
