@@ -13,7 +13,7 @@ It's a starting point. Every choice is the boring one on purpose.
 
 | Layer | Pick | Why |
 |---|---|---|
-| Server | One Hetzner Cloud VPS, shared vCPU (CX line) | Cheapest decent price per GB of RAM, EU data location |
+| Server | One HostHatch NVMe VPS | Lowest price per GB of RAM I've found, AMD EPYC + NVMe |
 | Static site / docs / landing | Astro + Markdown | Content is files; nothing to run |
 | Web app | Next.js (React) | Most popular, easiest React setup, agents know it best |
 | API | oRPC | End-to-end types, and the same routes can be exposed as OpenAPI later |
@@ -27,18 +27,22 @@ It's a starting point. Every choice is the boring one on purpose.
 
 I take the cheapest VPS that fits and put everything on it. For a product with no users yet, that's correct, not reckless — I just have to be honest about what I'm accepting: one box means one point of failure. If it dies, the product is down until I restore it. That's fine **only** if the restore is rehearsed (see backups).
 
-Hetzner prices as of November 2026 (new orders, Germany/Finland, excluding VAT and the €0.50/month IPv4 address — they raised prices on 15 June 2026):
+HostHatch compute VMs as advertised in November 2026 (USD, monthly billing):
 
-| Plan | vCPU | RAM | €/month |
-|---|---|---|---|
-| CX23 | 2 | 4 GB | 5.49 |
-| CX33 | 4 | 8 GB | 8.49 |
-| CX43 | 8 | 16 GB | 15.99 |
+| Plan | Cores | RAM | NVMe | Transfer | $/month |
+|---|---|---|---|---|---|
+| NVMe 2 GB | 1 shared | 2 GB | 10 GB | 1 TB | 4 |
+| NVMe 4 GB | 2 shared | 4 GB | 20 GB | 1 TB | 6 |
+| NVMe 8 GB | 2 shared | 8 GB | 35 GB | 2 TB | 9 |
+| NVMe 12 GB | 1 dedicated + 3 shared | 12 GB | 50 GB | 3 TB | 12 |
+| NVMe 16 GB | 2 dedicated + 2 shared | 16 GB | 75 GB | 4 TB | 15 |
 
-- Stay on the **CX** line. The CPX line more than doubled in June; it isn't the cheap option anymore.
-- **CX33 is enough to start**: Next.js, Postgres and a small worker fit in 8 GB. CX43 is the "~16 a month" box once there's load.
-- Cheap plans sell out. If the size I want isn't in stock, take the next one and rescale later — rescaling up is a reboot, not a migration.
-- Budget extra for backups: Hetzner's built-in backups cost 20% of the server price.
+- **NVMe 8 GB is enough to start**: Next.js, Postgres and a small worker fit in 8 GB. NVMe 16 GB is the "~16 a month" box, and its two dedicated cores matter for Postgres once there's real load.
+- **Why not Hetzner:** it's cheap, just not this cheap. After its June 2026 price rise, 8 GB is €8.49 and 16 GB is €15.99, both plus €0.50 for IPv4 and VAT, against $9 and $15 here — and HostHatch's 16 GB plan includes dedicated cores.
+- **Disk is the tight resource**, not RAM. 35 GB holds the OS, Docker images and Postgres for a while; prune old images on every deploy and watch `df`.
+- **Transfer counts both directions** and the server is throttled to 5 Mbps once the monthly quota runs out. Nightly off-box backups count against it too.
+- **Billing is strict**: per the terms, an unpaid invoice can mean suspension after 2 days and deletion after 5. Auto-pay with a card that won't expire, and keep backups outside the account.
+- Cores are mostly "fair-share" (shared with neighbours). Fine for a web app; it's the reason to move up to a plan with dedicated cores before Postgres becomes the bottleneck.
 
 ## Frontend: Astro or Next.js
 
@@ -110,8 +114,8 @@ A separate **WebSocket service** is only for genuinely two-way, high-frequency t
 
 ### 1. Provision
 
-1. Create a CX server with Ubuntu LTS and my SSH key. No password login.
-2. Attach a **Hetzner Cloud Firewall** allowing only 22, 80 and 443. Use the cloud firewall, not just `ufw`: ports published by Docker bypass `ufw` rules.
+1. Create the VM in the HostHatch panel with Ubuntu LTS and my SSH key, in the location closest to my users. No password login.
+2. Attach a **HostHatch firewall group** allowing only 22, 80 and 443. Use the provider firewall, not just `ufw`: ports published by Docker bypass `ufw` rules.
 3. On the box: create a non-root user with sudo, set `PasswordAuthentication no` in sshd, enable `unattended-upgrades`, install Docker.
 4. Point DNS (`app.example.com`, `example.com`) at the server's IP.
 
@@ -155,8 +159,8 @@ GitHub Actions on push to `main`: build the Docker image, push it to GHCR, SSH i
 
 The cheap single box is only acceptable because of this step.
 
-- Nightly `pg_dump -Fc` from a cron on the host, copied **off Hetzner** (any S3-compatible bucket at a different provider). Keep at least 7 dailies and 4 weeklies.
-- Hetzner's server backups are a bonus, not the plan: they live with the same provider and the same account as the thing they protect.
+- Nightly `pg_dump -Fc` from a cron on the host, copied **off HostHatch** (any S3-compatible bucket at a different provider). Keep at least 7 dailies and 4 weeklies.
+- HostHatch snapshots are a bonus, not the plan: before a risky change they're great, but they live in the same account as the thing they protect — and that account can be wiped over an unpaid invoice.
 - **Restore once before launch**: new server, fresh Postgres, `pg_restore`, app boots against it. Write down how long it took. A backup I have never restored is a guess.
 
 ### 5. Know when it's down
