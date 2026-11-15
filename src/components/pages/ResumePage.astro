@@ -1,0 +1,124 @@
+---
+// The CV as a plain page: rendered at build time from the same seed document
+// CV Press opens with, so recruiters (and crawlers) get the text in the HTML
+// instead of an editor that fills itself in with JavaScript. "Download PDF"
+// is the browser's print engine, same as the builder's.
+import BaseHead from '../BaseHead.astro';
+import Footer from '../Footer.astro';
+import Header from '../Header.astro';
+import { SITE_TITLE } from '../../consts';
+import { resume as copy } from '../../i18n/resume';
+import { localizePath, type Lang } from '../../i18n';
+import { DEFAULT_CV, DEFAULT_CV_ES } from '../../scripts/cv/default-cv';
+import { parseResume } from '../../scripts/cv/parse';
+import { suggestFilename } from '../../scripts/cv/print';
+import { renderSheet } from '../../scripts/cv/render';
+import { SHEET_CSS } from '../../scripts/cv/sheet-css';
+
+interface Props {
+	lang: Lang;
+}
+
+const { lang } = Astro.props;
+const c = copy[lang];
+const doc = parseResume(lang === 'es' ? DEFAULT_CV_ES : DEFAULT_CV);
+const sheet = renderSheet(doc);
+const pdfName = suggestFilename(doc.profile.name, doc.profile.title);
+// Paper rules only the print path needs. `@page` can't take a CSS variable,
+// so the page size is written in from the document's own setting.
+const printCss = `@media print {
+	@page { size: ${doc.settings.page}; margin: 0; }
+	html, body { margin: 0; padding: 0; background: #fff !important; }
+	body > :not(main), .skip-link, .resume-bar { display: none !important; }
+	main.resume { width: auto; max-width: none; margin: 0; padding: 0; }
+	.resume-fit { zoom: 1 !important; }
+	.resume-fit .sheet { box-shadow: none; }
+}`;
+---
+
+<!doctype html>
+<html lang={lang}>
+	<head>
+		<BaseHead title={`${c.metaTitle} — ${SITE_TITLE}`} description={c.metaDescription} />
+		<style is:inline set:html={SHEET_CSS}></style>
+		<style is:inline set:html={printCss}></style>
+	</head>
+	<body>
+		<Header />
+		<main class="resume">
+			<div class="resume-bar">
+				<h1>{c.title}</h1>
+				<div class="resume-actions">
+					<button type="button" class="btn primary" id="resume-print" data-filename={pdfName}>
+						{c.download}
+					</button>
+					<a class="btn" href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">{c.contact}</a>
+					<a class="btn" href={localizePath('/cv', lang)}>{c.builder}</a>
+				</div>
+				<p class="resume-hint">{c.downloadHint}</p>
+			</div>
+			<div class="resume-fit" id="resume-fit" set:html={sheet} />
+		</main>
+		<Footer />
+		<script is:inline>
+			(function () {
+				const fit = document.getElementById('resume-fit');
+				const sheet = fit && fit.querySelector('.sheet');
+				if (!fit || !sheet) return;
+				// Shrink the paper to the column on narrow screens. `zoom` (not a
+				// transform) so the layout box shrinks too and nothing scrolls sideways.
+				function resize() {
+					fit.style.zoom = '1';
+					const scale = Math.min(1, fit.clientWidth / sheet.offsetWidth);
+					fit.style.zoom = String(scale);
+				}
+				resize();
+				addEventListener('resize', resize);
+
+				const btn = document.getElementById('resume-print');
+				const title = document.title;
+				// The dialog offers the document title as the filename.
+				addEventListener('beforeprint', () => (document.title = btn.dataset.filename || title));
+				addEventListener('afterprint', () => (document.title = title));
+				btn.addEventListener('click', () => print());
+			})();
+		</script>
+	</body>
+</html>
+
+<style>
+	main.resume {
+		/* The paper is 8.5in wide; the default 720px column would clip it. */
+		width: calc(8.5in + 2em);
+	}
+	.resume-bar {
+		margin-bottom: 1.5em;
+	}
+	.resume-bar h1 {
+		margin-bottom: 0.5em;
+		font-size: 2em;
+	}
+	.resume-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6em;
+	}
+	.resume-actions button {
+		cursor: pointer;
+		font: inherit;
+		font-size: 0.85em;
+	}
+	.resume-hint {
+		margin: 0.6em 0 0;
+		font-size: 0.8em;
+		color: var(--text-light);
+	}
+	.resume-fit {
+		width: 100%;
+	}
+	.resume-fit :global(.sheet) {
+		box-shadow:
+			0 4px 12px rgba(0, 0, 0, 0.5),
+			0 16px 48px rgba(0, 0, 0, 0.4);
+	}
+</style>

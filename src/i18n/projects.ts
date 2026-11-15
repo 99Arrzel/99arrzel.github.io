@@ -68,11 +68,11 @@ export const projects: Record<Lang, ProjectsCopy> = {
 		metaDescription:
 			'What each of my side projects is, how it works and what it is built with.',
 		title: 'Projects',
-		introHtml: `A mix of stuff I actually finished and stuff that got abandoned somewhere between
-			"cool idea" and "the day job needs me back". Most of the half-built ones would
-			probably be done by now if I'd had AI in 2022, but I didn't &mdash; and I was either
-			too tired after work or too lazy on weekends to push them across the finish line.
-			Full graveyard on <a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.`,
+		introHtml: `Side projects, mostly built to fix a problem I actually had: a bank with no payment API,
+			marketplace listings with no prices, attendance tracked by hand. Some are finished tools,
+			some are experiments. My professional work is on the <a href="/#work">home page</a> and in
+			my <a href="/resume">CV</a>; the rest of my code is on
+			<a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.`,
 		menuLabel: 'Projects',
 		howTitle: 'How it works',
 		stackTitle: 'Built with',
@@ -108,6 +108,87 @@ export const projects: Record<Lang, ProjectsCopy> = {
 							{ title: 'Print', note: 'Browser print to PDF. Nothing leaves the tab.' },
 						],
 						tech: ['Astro', 'TypeScript', 'No server', 'localStorage'],
+					},
+				],
+			},
+			{
+				label: 'Automation & APIs',
+				projects: [
+					{
+						slug: 'bcp-adb-bolivia',
+						name: 'BCP-ADB-BOLIVIA',
+						year: '2026',
+						kind: 'Automation',
+						tagline: 'The bank has no QR payment API, so my phone became one.',
+						body: [
+							`BCP Bolivia will happily generate a payment QR inside its mobile app, and offers no
+							 way to do the same from code. This script drives the real app over ADB: it opens it,
+							 logs in, walks to the QR screen, types the amount, takes a screenshot and decodes
+							 the QR out of the image.`,
+							`The QR string comes out on stdout and the progress log on stderr, so it pipes into
+							 anything. It polls the screen instead of sleeping, needs no root, and logs out when
+							 it is done. A full run takes 30 to 40 seconds, most of it the bank's app loading.
+							 There is also a variant that runs on the phone itself through Termux and wireless
+							 debugging, no computer involved.`,
+						],
+						steps: [
+							{ title: 'Command', note: 'One flag: the amount to charge.' },
+							{ title: 'ADB', note: 'Opens the bank app on the phone and logs in.' },
+							{ title: 'Navigate', note: 'Taps through to the QR screen, types the amount.' },
+							{ title: 'Capture', note: 'Screenshots the phone and decodes the QR.' },
+							{ title: 'Output', note: 'The QR string, on stdout.' },
+						],
+						tech: ['Python', 'ADB', 'uiautomator', 'pyzbar'],
+						url: `${GH}/BCP-ADB-BOLIVIA`,
+					},
+					{
+						slug: 'prusa-slicer-web-api',
+						name: 'Prusa-Slicer-Web-Api',
+						year: '2023',
+						kind: 'API',
+						tagline: 'PrusaSlicer behind an HTTP endpoint, to quote 3D prints.',
+						body: [
+							`Part of a quoting system for people who 3D print for money. To price a part you
+							 need to know how much filament it eats and how long the machine is busy, with your
+							 own printer profile.`,
+							`So this wraps the PrusaSlicer command line in a small Actix server. POST an STL and
+							 a config <code>.ini</code> to <code>/slice</code>; it writes both to disk, slices,
+							 reads the totals back out of the generated G-code, cleans up and answers with JSON:
+							 filament in millimetres, cubic centimetres and grams, plus the estimated print
+							 time. Under 200 lines of Rust, shipped as a Docker image.`,
+						],
+						steps: [
+							{ title: 'Upload', note: 'An STL and a printer config, as form data.' },
+							{ title: 'Slice', note: 'The PrusaSlicer CLI turns them into G-code.' },
+							{ title: 'Read', note: 'Filament and time, from the end of the G-code.' },
+							{ title: 'Answer', note: 'JSON with length, volume, weight and time.' },
+						],
+						tech: ['Rust', 'Actix Web', 'Tokio', 'Docker'],
+						url: `${GH}/Prusa-Slicer-Web-Api`,
+					},
+					{
+						slug: 'onichanapproves',
+						name: 'OniChanApproves',
+						year: '2024',
+						kind: 'Bot · unfinished',
+						tagline: "SonarQube's verdict, delivered as an anime gif.",
+						body: [
+							`The plan: when an analysis finishes, SonarQube posts the quality gate result to this
+							 bot, and the bot answers on the pull request with a gif. A cheer if the gate
+							 passed, an angry stare if it did not.`,
+							`Where it got to: one Express file in a Docker container. It receives the webhook and
+							 it can fetch a random reaction gif; the last step, posting that gif to GitHub, is
+							 still commented out.`,
+						],
+						steps: [
+							{ title: 'SonarQube', note: 'An analysis finishes.' },
+							{ title: 'Webhook', note: 'The quality gate result arrives as JSON.' },
+							{ title: 'Reaction', note: 'Passed: cheers. Failed: angry stare.' },
+							{ title: 'Gif', note: 'A random one for that reaction.' },
+							{ title: 'Pull request', note: 'Comment it. Not wired up yet.' },
+						],
+						tech: ['TypeScript', 'Express', 'Octokit', 'Docker'],
+						url: `${GH}/OniChanApproves`,
 					},
 				],
 			},
@@ -245,87 +326,6 @@ export const projects: Record<Lang, ProjectsCopy> = {
 				],
 			},
 			{
-				label: 'Automation & APIs',
-				projects: [
-					{
-						slug: 'bcp-adb-bolivia',
-						name: 'BCP-ADB-BOLIVIA',
-						year: '2026',
-						kind: 'Automation',
-						tagline: 'The bank has no QR payment API, so my phone became one.',
-						body: [
-							`BCP Bolivia will happily generate a payment QR inside its mobile app, and offers no
-							 way to do the same from code. This script drives the real app over ADB: it opens it,
-							 logs in, walks to the QR screen, types the amount, takes a screenshot and decodes
-							 the QR out of the image.`,
-							`The QR string comes out on stdout and the progress log on stderr, so it pipes into
-							 anything. It polls the screen instead of sleeping, needs no root, and logs out when
-							 it is done. A full run takes 30 to 40 seconds, most of it the bank's app loading.
-							 There is also a variant that runs on the phone itself through Termux and wireless
-							 debugging, no computer involved.`,
-						],
-						steps: [
-							{ title: 'Command', note: 'One flag: the amount to charge.' },
-							{ title: 'ADB', note: 'Opens the bank app on the phone and logs in.' },
-							{ title: 'Navigate', note: 'Taps through to the QR screen, types the amount.' },
-							{ title: 'Capture', note: 'Screenshots the phone and decodes the QR.' },
-							{ title: 'Output', note: 'The QR string, on stdout.' },
-						],
-						tech: ['Python', 'ADB', 'uiautomator', 'pyzbar'],
-						url: `${GH}/BCP-ADB-BOLIVIA`,
-					},
-					{
-						slug: 'prusa-slicer-web-api',
-						name: 'Prusa-Slicer-Web-Api',
-						year: '2023',
-						kind: 'API',
-						tagline: 'PrusaSlicer behind an HTTP endpoint, to quote 3D prints.',
-						body: [
-							`Part of a quoting system for people who 3D print for money. To price a part you
-							 need to know how much filament it eats and how long the machine is busy, with your
-							 own printer profile.`,
-							`So this wraps the PrusaSlicer command line in a small Actix server. POST an STL and
-							 a config <code>.ini</code> to <code>/slice</code>; it writes both to disk, slices,
-							 reads the totals back out of the generated G-code, cleans up and answers with JSON:
-							 filament in millimetres, cubic centimetres and grams, plus the estimated print
-							 time. Under 200 lines of Rust, shipped as a Docker image.`,
-						],
-						steps: [
-							{ title: 'Upload', note: 'An STL and a printer config, as form data.' },
-							{ title: 'Slice', note: 'The PrusaSlicer CLI turns them into G-code.' },
-							{ title: 'Read', note: 'Filament and time, from the end of the G-code.' },
-							{ title: 'Answer', note: 'JSON with length, volume, weight and time.' },
-						],
-						tech: ['Rust', 'Actix Web', 'Tokio', 'Docker'],
-						url: `${GH}/Prusa-Slicer-Web-Api`,
-					},
-					{
-						slug: 'onichanapproves',
-						name: 'OniChanApproves',
-						year: '2024',
-						kind: 'Bot · unfinished',
-						tagline: "SonarQube's verdict, delivered as an anime gif.",
-						body: [
-							`The plan: when an analysis finishes, SonarQube posts the quality gate result to this
-							 bot, and the bot answers on the pull request with a gif. A cheer if the gate
-							 passed, an angry stare if it did not.`,
-							`Where it got to: one Express file in a Docker container. It receives the webhook and
-							 it can fetch a random reaction gif; the last step, posting that gif to GitHub, is
-							 still commented out.`,
-						],
-						steps: [
-							{ title: 'SonarQube', note: 'An analysis finishes.' },
-							{ title: 'Webhook', note: 'The quality gate result arrives as JSON.' },
-							{ title: 'Reaction', note: 'Passed: cheers. Failed: angry stare.' },
-							{ title: 'Gif', note: 'A random one for that reaction.' },
-							{ title: 'Pull request', note: 'Comment it. Not wired up yet.' },
-						],
-						tech: ['TypeScript', 'Express', 'Octokit', 'Docker'],
-						url: `${GH}/OniChanApproves`,
-					},
-				],
-			},
-			{
 				label: 'Hardware',
 				projects: [
 					{
@@ -428,11 +428,10 @@ export const projects: Record<Lang, ProjectsCopy> = {
 		metaDescription:
 			'Qué es cada uno de mis proyectos personales, cómo funciona y con qué está hecho.',
 		title: 'Proyectos',
-		introHtml: `Una mezcla de cosas que efectivamente terminé y cosas que quedaron abandonadas en algún
-			punto entre "qué buena idea" y "el trabajo me necesita de vuelta". Varias de las que quedaron
-			a medias probablemente ya estarían listas si hubiera tenido IA en 2022, pero no la tenía
-			&mdash; y o estaba demasiado cansado después del trabajo, o demasiado vago el fin de semana
-			como para empujarlas hasta el final. El cementerio completo está en
+		introHtml: `Proyectos personales, casi todos hechos para resolver un problema que tenía de verdad:
+			un banco sin API de pagos, publicaciones de marketplace sin precio, asistencia anotada a mano.
+			Algunos son herramientas terminadas, otros son experimentos. Mi trabajo profesional está en el
+			<a href="/es/#work">inicio</a> y en mi <a href="/es/resume">CV</a>; el resto de mi código está en
 			<a href="https://github.com/99arrzel" target="_blank" rel="noopener">GitHub</a>.`,
 		menuLabel: 'Proyectos',
 		howTitle: 'Cómo funciona',
@@ -469,6 +468,89 @@ export const projects: Record<Lang, ProjectsCopy> = {
 							{ title: 'Imprimir', note: 'A PDF desde el navegador. Nada sale de la pestaña.' },
 						],
 						tech: ['Astro', 'TypeScript', 'Sin servidor', 'localStorage'],
+					},
+				],
+			},
+			{
+				label: 'Automatización y APIs',
+				projects: [
+					{
+						slug: 'bcp-adb-bolivia',
+						name: 'BCP-ADB-BOLIVIA',
+						year: '2026',
+						kind: 'Automatización',
+						tagline: 'El banco no tiene API de cobros por QR, así que mi teléfono pasó a serlo.',
+						body: [
+							`El BCP de Bolivia genera sin problema un QR de cobro dentro de su app móvil, y no
+							 ofrece ninguna forma de hacer lo mismo desde código. Este script maneja la app real
+							 por ADB: la abre, inicia sesión, navega hasta la pantalla de QR, escribe el monto,
+							 saca una captura y decodifica el QR de la imagen.`,
+							`El string del QR sale por stdout y el registro de progreso por stderr, así que se
+							 puede encadenar con cualquier cosa. Consulta la pantalla en vez de esperar tiempos
+							 fijos, no necesita root y cierra la sesión al terminar. Una corrida completa tarda
+							 entre 30 y 40 segundos, casi todo la app del banco cargando. También hay una
+							 variante que corre en el mismo teléfono con Termux y depuración inalámbrica, sin
+							 computadora.`,
+						],
+						steps: [
+							{ title: 'Comando', note: 'Un solo parámetro: el monto a cobrar.' },
+							{ title: 'ADB', note: 'Abre la app del banco en el teléfono e inicia sesión.' },
+							{ title: 'Navegar', note: 'Toca hasta llegar al QR y escribe el monto.' },
+							{ title: 'Capturar', note: 'Saca una captura del teléfono y decodifica el QR.' },
+							{ title: 'Salida', note: 'El string del QR, por stdout.' },
+						],
+						tech: ['Python', 'ADB', 'uiautomator', 'pyzbar'],
+						url: `${GH}/BCP-ADB-BOLIVIA`,
+					},
+					{
+						slug: 'prusa-slicer-web-api',
+						name: 'Prusa-Slicer-Web-Api',
+						year: '2023',
+						kind: 'API',
+						tagline: 'PrusaSlicer detrás de un endpoint HTTP, para cotizar impresiones 3D.',
+						body: [
+							`Parte de un sistema de cotización para quienes imprimen en 3D por encargo. Para
+							 ponerle precio a una pieza hay que saber cuánto filamento consume y cuánto tiempo
+							 ocupa la máquina, con el perfil de tu propia impresora.`,
+							`Así que esto envuelve la línea de comandos de PrusaSlicer en un servidor Actix
+							 chico. Mandás por POST un STL y un <code>.ini</code> de configuración a
+							 <code>/slice</code>; escribe los dos a disco, lamina, lee los totales del G-code
+							 generado, limpia y responde con JSON: filamento en milímetros, centímetros cúbicos
+							 y gramos, más el tiempo estimado de impresión. Menos de 200 líneas de Rust,
+							 distribuido como imagen de Docker.`,
+						],
+						steps: [
+							{ title: 'Subir', note: 'Un STL y la configuración de la impresora, como formulario.' },
+							{ title: 'Laminar', note: 'La CLI de PrusaSlicer los convierte en G-code.' },
+							{ title: 'Leer', note: 'Filamento y tiempo, del final del G-code.' },
+							{ title: 'Responder', note: 'JSON con largo, volumen, peso y tiempo.' },
+						],
+						tech: ['Rust', 'Actix Web', 'Tokio', 'Docker'],
+						url: `${GH}/Prusa-Slicer-Web-Api`,
+					},
+					{
+						slug: 'onichanapproves',
+						name: 'OniChanApproves',
+						year: '2024',
+						kind: 'Bot · sin terminar',
+						tagline: 'El veredicto de SonarQube, entregado como un gif de anime.',
+						body: [
+							`El plan: cuando termina un análisis, SonarQube le manda a este bot el resultado de
+							 la quality gate, y el bot responde en el pull request con un gif. Un festejo si
+							 pasó, una mirada furiosa si no.`,
+							`Hasta dónde llegó: un archivo de Express en un contenedor de Docker. Recibe el
+							 webhook y sabe buscar un gif de reacción al azar; el último paso, publicar ese gif
+							 en GitHub, sigue comentado.`,
+						],
+						steps: [
+							{ title: 'SonarQube', note: 'Termina un análisis.' },
+							{ title: 'Webhook', note: 'Llega el resultado de la quality gate en JSON.' },
+							{ title: 'Reacción', note: 'Pasó: festejo. Falló: mirada furiosa.' },
+							{ title: 'Gif', note: 'Uno al azar para esa reacción.' },
+							{ title: 'Pull request', note: 'Comentarlo. Todavía sin conectar.' },
+						],
+						tech: ['TypeScript', 'Express', 'Octokit', 'Docker'],
+						url: `${GH}/OniChanApproves`,
 					},
 				],
 			},
@@ -605,89 +687,6 @@ export const projects: Record<Lang, ProjectsCopy> = {
 						tech: ['AdonisJS', 'TypeScript', 'PostgreSQL', 'MinIO', 'React Native'],
 						url: `${GH}/PAPP2`,
 						extra: { label: 'Código de la app móvil', url: `${GH}/PAPP2FRONTEND` },
-					},
-				],
-			},
-			{
-				label: 'Automatización y APIs',
-				projects: [
-					{
-						slug: 'bcp-adb-bolivia',
-						name: 'BCP-ADB-BOLIVIA',
-						year: '2026',
-						kind: 'Automatización',
-						tagline: 'El banco no tiene API de cobros por QR, así que mi teléfono pasó a serlo.',
-						body: [
-							`El BCP de Bolivia genera sin problema un QR de cobro dentro de su app móvil, y no
-							 ofrece ninguna forma de hacer lo mismo desde código. Este script maneja la app real
-							 por ADB: la abre, inicia sesión, navega hasta la pantalla de QR, escribe el monto,
-							 saca una captura y decodifica el QR de la imagen.`,
-							`El string del QR sale por stdout y el registro de progreso por stderr, así que se
-							 puede encadenar con cualquier cosa. Consulta la pantalla en vez de esperar tiempos
-							 fijos, no necesita root y cierra la sesión al terminar. Una corrida completa tarda
-							 entre 30 y 40 segundos, casi todo la app del banco cargando. También hay una
-							 variante que corre en el mismo teléfono con Termux y depuración inalámbrica, sin
-							 computadora.`,
-						],
-						steps: [
-							{ title: 'Comando', note: 'Un solo parámetro: el monto a cobrar.' },
-							{ title: 'ADB', note: 'Abre la app del banco en el teléfono e inicia sesión.' },
-							{ title: 'Navegar', note: 'Toca hasta llegar al QR y escribe el monto.' },
-							{ title: 'Capturar', note: 'Saca una captura del teléfono y decodifica el QR.' },
-							{ title: 'Salida', note: 'El string del QR, por stdout.' },
-						],
-						tech: ['Python', 'ADB', 'uiautomator', 'pyzbar'],
-						url: `${GH}/BCP-ADB-BOLIVIA`,
-					},
-					{
-						slug: 'prusa-slicer-web-api',
-						name: 'Prusa-Slicer-Web-Api',
-						year: '2023',
-						kind: 'API',
-						tagline: 'PrusaSlicer detrás de un endpoint HTTP, para cotizar impresiones 3D.',
-						body: [
-							`Parte de un sistema de cotización para quienes imprimen en 3D por encargo. Para
-							 ponerle precio a una pieza hay que saber cuánto filamento consume y cuánto tiempo
-							 ocupa la máquina, con el perfil de tu propia impresora.`,
-							`Así que esto envuelve la línea de comandos de PrusaSlicer en un servidor Actix
-							 chico. Mandás por POST un STL y un <code>.ini</code> de configuración a
-							 <code>/slice</code>; escribe los dos a disco, lamina, lee los totales del G-code
-							 generado, limpia y responde con JSON: filamento en milímetros, centímetros cúbicos
-							 y gramos, más el tiempo estimado de impresión. Menos de 200 líneas de Rust,
-							 distribuido como imagen de Docker.`,
-						],
-						steps: [
-							{ title: 'Subir', note: 'Un STL y la configuración de la impresora, como formulario.' },
-							{ title: 'Laminar', note: 'La CLI de PrusaSlicer los convierte en G-code.' },
-							{ title: 'Leer', note: 'Filamento y tiempo, del final del G-code.' },
-							{ title: 'Responder', note: 'JSON con largo, volumen, peso y tiempo.' },
-						],
-						tech: ['Rust', 'Actix Web', 'Tokio', 'Docker'],
-						url: `${GH}/Prusa-Slicer-Web-Api`,
-					},
-					{
-						slug: 'onichanapproves',
-						name: 'OniChanApproves',
-						year: '2024',
-						kind: 'Bot · sin terminar',
-						tagline: 'El veredicto de SonarQube, entregado como un gif de anime.',
-						body: [
-							`El plan: cuando termina un análisis, SonarQube le manda a este bot el resultado de
-							 la quality gate, y el bot responde en el pull request con un gif. Un festejo si
-							 pasó, una mirada furiosa si no.`,
-							`Hasta dónde llegó: un archivo de Express en un contenedor de Docker. Recibe el
-							 webhook y sabe buscar un gif de reacción al azar; el último paso, publicar ese gif
-							 en GitHub, sigue comentado.`,
-						],
-						steps: [
-							{ title: 'SonarQube', note: 'Termina un análisis.' },
-							{ title: 'Webhook', note: 'Llega el resultado de la quality gate en JSON.' },
-							{ title: 'Reacción', note: 'Pasó: festejo. Falló: mirada furiosa.' },
-							{ title: 'Gif', note: 'Uno al azar para esa reacción.' },
-							{ title: 'Pull request', note: 'Comentarlo. Todavía sin conectar.' },
-						],
-						tech: ['TypeScript', 'Express', 'Octokit', 'Docker'],
-						url: `${GH}/OniChanApproves`,
 					},
 				],
 			},

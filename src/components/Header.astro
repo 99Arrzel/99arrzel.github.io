@@ -16,6 +16,7 @@ const p = (path: string) => localizePath(path, lang);
 		<a class="brand" href={p('/')}><span class="brand-dot" aria-hidden="true"></span>{SITE_TITLE}</a>
 		<div class="internal-links">
 			<HeaderLink href={p('/')}>{t('nav.home')}</HeaderLink>
+			<HeaderLink href={p('/resume')}>{t('nav.cv')}</HeaderLink>
 			<HeaderLink href={p('/projects')}>{t('nav.projects')}</HeaderLink>
 			<HeaderLink href={p('/vault')}>{t('nav.vault')}</HeaderLink>
 			<HeaderLink href={p('/interviews')}>{t('nav.interviews')}</HeaderLink>

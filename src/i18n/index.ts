@@ -27,7 +27,7 @@ export const langs = Object.keys(languages) as Lang[];
  * Pages that exist in both locales. Adding a page under `src/pages/es/` means
  * adding it here too, or the switcher will keep routing to its ancestor.
  */
-const TRANSLATED = ['/', '/projects', '/about', '/interviews', '/vault', '/cv'];
+const TRANSLATED = ['/', '/projects', '/about', '/interviews', '/vault', '/cv', '/resume'];
 
 /** Trailing-slash-insensitive key for comparing paths. */
 function key(path: string): string {

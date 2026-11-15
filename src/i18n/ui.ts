@@ -23,7 +23,7 @@ export const ui = {
 		'lang.switchTo': 'Ver en español',
 
 		'site.description':
-			'Full-stack engineer in Buenos Aires. I build production SaaS and automate annoying things.',
+			'Full-stack engineer for US SaaS teams: Stripe billing, legacy PHP to Next.js migrations, AWS pipelines and agentic AI workflows.',
 	},
 	es: {
 		'nav.home': 'Inicio',
@@ -43,7 +43,7 @@ export const ui = {
 		'lang.switchTo': 'View in English',
 
 		'site.description':
-			'Ingeniero full-stack en Buenos Aires. Construyo SaaS en producción y automatizo cosas molestas.',
+			'Ingeniero full-stack para equipos SaaS de EE. UU.: cobros con Stripe, migraciones de PHP a Next.js, pipelines en AWS y flujos de IA agéntica.',
 	},
 } as const;
 

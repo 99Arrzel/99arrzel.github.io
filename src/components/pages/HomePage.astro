@@ -6,6 +6,8 @@ import LifeInWeeks from '../LifeInWeeks.astro';
 import { SITE_TITLE } from '../../consts';
 import { home } from '../../i18n/home';
 import { localizePath, type Lang } from '../../i18n';
+import { DEFAULT_CV } from '../../scripts/cv/default-cv';
+import { parseResume } from '../../scripts/cv/parse';
 
 interface Props {
 	lang: Lang;
@@ -13,6 +15,9 @@ interface Props {
 
 const { lang } = Astro.props;
 const c = home[lang];
+const cvHref = localizePath('/resume', lang);
+// One address to keep current: the CV's.
+const email = parseResume(DEFAULT_CV).profile.email;
 
 // Sad LATAM memes for the wall. Everything is a muted looping MP4 except the one
 // Tenor clip, which only exists as a GIF: Giphy's MP4 rendition of a clip is
@@ -58,6 +63,7 @@ const person = {
 	name: SITE_TITLE,
 	url: new URL('/', Astro.site).href,
 	jobTitle: 'Full-stack engineer',
+	email: `mailto:${email}`,
 	address: { '@type': 'PostalAddress', addressLocality: 'Buenos Aires', addressCountry: 'AR' },
 	sameAs: ['https://github.com/99Arrzel', 'https://linkedin.com/in/99arrzel'],
 };
@@ -72,47 +78,54 @@ const person = {
 	<body>
 		<Header />
 		<main>
-			<section class="wall" aria-label={c.wallAria}>
-				<div class="wall-masonry" aria-hidden="true">
-					{wallTiles.map((tile, i) => (
-						<div class="tile" style={`--seed: ${i}; aspect-ratio: ${tile.w} / ${tile.h};`}>
-							{tile.src.endsWith('.mp4') ? (
-								<video data-src={tile.src} loop muted playsinline preload="none"></video>
-							) : (
-								<img src={tile.src} alt="" loading="lazy" decoding="async" />
-							)}
-						</div>
+			<section class="hero">
+				<p class="eyebrow">{c.eyebrow}</p>
+				<h1>{c.title}</h1>
+				<p class="lede">{c.lede}</p>
+				<p class="availability">
+					<span class="dot" aria-hidden="true"></span>
+					{c.availability}
+				</p>
+				<ul class="proof">
+					{c.proof.map((p) => (
+						<li>
+							<span class="proof-value">{p.value}</span>
+							<span class="proof-label">{p.label}</span>
+						</li>
 					))}
+				</ul>
+				<div class="hero-actions">
+					<a class="btn primary" href={cvHref}>{c.heroActions.cv} <span aria-hidden="true">&rarr;</span></a>
+					<a class="btn" href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">{c.heroActions.linkedin}</a>
+					<a class="btn" href={`mailto:${email}`}>{c.heroActions.email}</a>
 				</div>
-				<div class="wall-content">
-					<div class="panel">
-						<h1 class="wall-intro" set:html={c.introHtml} />
-						<section class="countdown" aria-label={c.countdownAria}>
-							<p class="countdown-label">{c.countdownLabel}</p>
-							<div class="countdown-grid" id="countdown">
-								<div class="unit"><span class="num" data-unit="months">--</span><span class="lbl">{c.units.months}</span></div>
-								<div class="unit"><span class="num" data-unit="days">--</span><span class="lbl">{c.units.days}</span></div>
-								<div class="unit"><span class="num" data-unit="hours">--</span><span class="lbl">{c.units.hours}</span></div>
-								<div class="unit"><span class="num" data-unit="minutes">--</span><span class="lbl">{c.units.minutes}</span></div>
-								<div class="unit"><span class="num" data-unit="seconds">--</span><span class="lbl">{c.units.seconds}</span></div>
-							</div>
-							<p class="countdown-foot">{c.countdownFoot}</p>
-						</section>
-						<p class="availability">
-							<span class="dot" aria-hidden="true"></span>
-							{c.availability}
-						</p>
-					</div>
-				</div>
-				<a class="scroll-hint" href="#life">
-					<span>{c.scrollHint}</span>
-					<span class="arrow" aria-hidden="true">&darr;</span>
-				</a>
 			</section>
 
-			<LifeInWeeks lang={lang} />
+			<section id="work" class="work">
+				<h2>{c.workTitle}</h2>
+				<p class="section-intro">{c.workIntro}</p>
+				<div class="case-list">
+					{c.cases.map((k) => (
+						<article class="case">
+							<header class="case-head">
+								<h3>{k.org}</h3>
+								<span class="case-when">{k.when}</span>
+							</header>
+							<p class="eyebrow case-role">{k.role}</p>
+							<p class="case-title">{k.title}</p>
+							<ul class="case-points">
+								{k.points.map((pt) => <li>{pt}</li>)}
+							</ul>
+							<div class="tag-row">
+								{k.tags.map((t) => <span class="tag">{t}</span>)}
+							</div>
+						</article>
+					))}
+				</div>
+				<p class="work-more"><a href={cvHref}>{c.workMore} &rarr;</a></p>
+			</section>
 
-			<section id="work" class="services">
+			<section class="services">
 				<h2>{c.servicesTitle}</h2>
 				<ol class="service-list">
 					{c.services.map((s, i) => (
@@ -151,11 +164,48 @@ const person = {
 					<a class="btn primary" href="https://linkedin.com/in/99arrzel" target="_blank" rel="noopener">
 						{c.ctaActions.linkedin} <span aria-hidden="true">&rarr;</span>
 					</a>
+					<a class="btn" href={`mailto:${email}`}>{c.ctaActions.email}</a>
+					<a class="btn" href={cvHref}>{c.ctaActions.cv}</a>
 					<a class="btn" href={localizePath('/projects', lang)}>{c.ctaActions.projects}</a>
-					<a class="btn" href={localizePath('/cv', lang)}>{c.ctaActions.cv}</a>
 					<a class="btn" href="https://github.com/99Arrzel" target="_blank" rel="noopener">{c.ctaActions.github}</a>
 				</div>
 			</section>
+
+			<section class="fun" aria-labelledby="fun-title">
+				<h2 id="fun-title">{c.funTitle}</h2>
+				<p class="section-intro">{c.funIntro}</p>
+			</section>
+
+			<section class="wall" aria-label={c.wallAria}>
+				<div class="wall-masonry" aria-hidden="true">
+					{wallTiles.map((tile, i) => (
+						<div class="tile" style={`--seed: ${i}; aspect-ratio: ${tile.w} / ${tile.h};`}>
+							{tile.src.endsWith('.mp4') ? (
+								<video data-src={tile.src} loop muted playsinline preload="none"></video>
+							) : (
+								<img src={tile.src} alt="" loading="lazy" decoding="async" />
+							)}
+						</div>
+					))}
+				</div>
+				<div class="wall-content">
+					<div class="panel">
+						<section class="countdown" aria-label={c.countdownAria}>
+							<p class="countdown-label">{c.countdownLabel}</p>
+							<div class="countdown-grid" id="countdown">
+								<div class="unit"><span class="num" data-unit="months">--</span><span class="lbl">{c.units.months}</span></div>
+								<div class="unit"><span class="num" data-unit="days">--</span><span class="lbl">{c.units.days}</span></div>
+								<div class="unit"><span class="num" data-unit="hours">--</span><span class="lbl">{c.units.hours}</span></div>
+								<div class="unit"><span class="num" data-unit="minutes">--</span><span class="lbl">{c.units.minutes}</span></div>
+								<div class="unit"><span class="num" data-unit="seconds">--</span><span class="lbl">{c.units.seconds}</span></div>
+							</div>
+							<p class="countdown-foot">{c.countdownFoot}</p>
+						</section>
+					</div>
+				</div>
+			</section>
+
+			<LifeInWeeks lang={lang} />
 		</main>
 		<Footer />
 		<script is:inline>
@@ -199,10 +249,9 @@ const person = {
 				setInterval(tick, 1000);
 			})();
 			// The wall: fetch a clip only once its tile is really on screen, and
-			// stop decoding it when it isn't. Tiles below the hero's bottom edge
+			// stop decoding it when it isn't. Tiles below the wall's bottom edge
 			// are clipped away and never intersect, so they never download; and
-			// once the hero scrolls out of view nothing is left playing behind
-			// the rest of the page.
+			// a visitor who never scrolls down to the memes never fetches one.
 			(function () {
 				const clips = document.querySelectorAll('.wall-masonry video');
 				// With reduced motion the clip still loads, but stays on its first
@@ -228,174 +277,33 @@ const person = {
 </html>
 
 <style>
-	/* ===== Hero wall (masonry of sad gifs + countdown) ===== */
-	.wall {
-		position: relative;
-		height: 100vh;
-		/* Where supported: the height with the phone's address bar showing, so
-		   the scroll hint at the bottom isn't hidden behind the browser chrome. */
-		height: 100svh;
-		width: 100vw;
-		margin-left: calc(50% - 50vw);
-		margin-right: calc(50% - 50vw);
-		/* Cancel main's top padding so the hero sits flush under the
-		   transparent fixed header (full-bleed). Must match the main
-		   top padding in global.css. */
-		margin-top: calc(-1 * var(--header-height) - 1.5em);
-		margin-bottom: 3em;
-		padding: 0;
-		overflow: hidden;
-		isolation: isolate;
-		background: #0a0a10;
+	/* ===== Hero: who I am and what I've shipped, before anything else ===== */
+	.hero {
+		padding: 2.5em 0 3em;
+		margin-bottom: 3.5em;
+		border-bottom: 1px solid var(--border);
 	}
-	/* Two jobs in one layer between the memes and the panel: pull the eye to
-	   the middle, and melt the bottom of the wall into the page so the hero
-	   ends in a fade rather than a hard edge. */
-	.wall::after {
-		content: "";
-		position: absolute;
-		inset: 0;
-		z-index: 1;
-		pointer-events: none;
-		background:
-			radial-gradient(ellipse 60% 55% at 50% 46%, rgba(8, 10, 14, 0.5), transparent 75%),
-			linear-gradient(
-				to bottom,
-				rgba(13, 17, 23, 0.5) 0,
-				transparent 16%,
-				transparent 58%,
-				rgba(13, 17, 23, 0.85) 86%,
-				var(--bg) 100%
-			);
-	}
-	.wall-masonry {
-		column-count: 4;
-		column-gap: 0.4em;
-		padding: 0.4em;
-	}
-	.wall-masonry .tile {
-		break-inside: avoid;
-		margin-bottom: 0.5em;
-		border-radius: 10px;
-		overflow: hidden;
-		position: relative;
-		background: hsl(calc(var(--seed, 0) * 47deg + 220deg) 14% 12%);
-	}
-	/* The tile's box comes from its inline aspect-ratio; the clip fills it.
-	   Clips sit back a little so the panel reads first; the one under the
-	   cursor comes forward. */
-	.wall-masonry .tile img,
-	.wall-masonry .tile video {
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		display: block;
-		border-radius: 0;
-		opacity: 0.7;
-		transition: opacity 0.3s ease;
-	}
-	.wall-masonry .tile:hover img,
-	.wall-masonry .tile:hover video {
-		opacity: 1;
-	}
-	.wall-content {
-		position: absolute;
-		inset: 0;
-		z-index: 2;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		padding: calc(var(--header-height) + 1em) 1em 4.5em;
-		pointer-events: none;
-	}
-	/* One pane of glass for everything the hero says, instead of four
-	   separate badges competing with the memes behind them. */
-	.panel {
-		pointer-events: auto;
-		width: 100%;
-		max-width: 660px;
-		padding: 1.5em 1.75em 1.15em;
-		text-align: center;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		border-radius: 22px;
-		background: linear-gradient(180deg, rgba(20, 24, 33, 0.7), rgba(10, 12, 18, 0.8));
-		backdrop-filter: blur(18px) saturate(150%);
-		-webkit-backdrop-filter: blur(18px) saturate(150%);
-		box-shadow:
-			0 30px 80px rgba(0, 0, 0, 0.55),
-			inset 0 1px 0 rgba(255, 255, 255, 0.08);
-	}
-	.wall-intro {
-		margin: 0;
-		font-size: 1.1em;
-		font-weight: 400;
-		line-height: 1.5;
-		letter-spacing: 0;
-		color: rgba(255, 255, 255, 0.8);
-	}
-	.wall-intro :global(strong) {
-		color: #fff;
-		font-weight: 700;
-	}
-	.countdown {
-		margin: 1.25em 0 0;
-		padding-top: 1.25em;
-		border-top: 1px solid rgba(255, 255, 255, 0.1);
-	}
-	.countdown-label {
+	.hero .eyebrow {
 		margin: 0 0 1em;
-		font-family: var(--mono);
-		font-size: 0.68em;
-		text-transform: uppercase;
-		letter-spacing: 0.24em;
-		color: rgba(255, 255, 255, 0.55);
 	}
-	.countdown-grid {
-		display: grid;
-		grid-template-columns: repeat(5, 1fr);
+	.hero h1 {
+		margin-bottom: 0.45em;
+		font-size: clamp(2.2em, 6.5vw, 3.2em);
 	}
-	.countdown .unit {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		padding: 0.25em;
-	}
-	.countdown .unit + .unit {
-		border-left: 1px solid rgba(255, 255, 255, 0.1);
-	}
-	.countdown .num {
-		font-family: var(--mono);
-		font-size: clamp(1.9em, 6vw, 3em);
-		font-weight: 600;
-		color: #fff;
-		line-height: 1;
-		letter-spacing: -0.02em;
-		font-variant-numeric: tabular-nums;
-	}
-	.countdown .lbl {
-		margin-top: 0.7em;
-		font-family: var(--mono);
-		font-size: 0.6em;
-		text-transform: uppercase;
-		letter-spacing: 0.14em;
-		color: rgba(255, 255, 255, 0.5);
-	}
-	.countdown-foot {
-		margin: 1.1em 0 0;
-		font-size: 0.85em;
-		font-style: italic;
-		color: rgba(255, 255, 255, 0.55);
+	.lede {
+		margin: 0 0 1.25em;
+		max-width: 36em;
+		font-size: 1.12em;
+		line-height: 1.6;
+		color: var(--text);
 	}
 	/* Inline, so when the line wraps on a phone the dot stays with the first
-	   word instead of drifting out to the panel's edge. */
+	   word instead of drifting out to the edge. */
 	.availability {
-		margin: 1.15em 0 0;
-		padding-top: 1em;
-		border-top: 1px solid rgba(255, 255, 255, 0.1);
+		margin: 0 0 2em;
 		font-size: 0.85em;
 		line-height: 1.4;
-		color: rgba(255, 255, 255, 0.85);
-		text-wrap: balance;
+		color: var(--text-heading);
 	}
 	.availability .dot {
 		display: inline-block;
@@ -407,69 +315,108 @@ const person = {
 		background: #22c55e;
 		box-shadow: 0 0 0 0.25em rgba(34, 197, 94, 0.22);
 	}
-	/* No badge of its own: the wall has already faded to the page colour down
-	   here, which is all the backing the label needs. */
-	.scroll-hint {
-		position: absolute;
-		bottom: 1em;
-		left: 50%;
-		transform: translateX(-50%);
-		z-index: 3;
+	/* The numbers a recruiter would otherwise have to dig out of the CV. */
+	.proof {
+		list-style: none;
+		margin: 0 0 2em;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(4, 1fr);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+		background: var(--bg-secondary);
+	}
+	.proof li {
 		display: flex;
 		flex-direction: column;
-		align-items: center;
-		gap: 0.2em;
-		padding: 0.4em 1em;
-		color: rgba(255, 255, 255, 0.7);
-		text-decoration: none;
+		gap: 0.35em;
+		padding: 1em 1.1em;
+	}
+	.proof li + li {
+		border-left: 1px solid var(--border);
+	}
+	.proof-value {
 		font-family: var(--mono);
-		font-size: 0.66em;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		/* It's absolutely positioned with left:50%, which otherwise caps its
-		   width at half the viewport and forces the label to wrap. */
-		white-space: nowrap;
-		transition: color 0.2s ease;
-	}
-	.scroll-hint:hover {
-		color: #fff;
-	}
-	.scroll-hint .arrow {
-		font-size: 1.5em;
+		font-size: 1.6em;
+		font-weight: 700;
 		line-height: 1;
-		animation: bob 1.8s ease-in-out infinite;
+		color: var(--accent);
+		font-variant-numeric: tabular-nums;
 	}
-	@keyframes bob {
-		0%, 100% { transform: translateY(0); }
-		50% { transform: translateY(5px); }
+	.proof-label {
+		font-size: 0.78em;
+		line-height: 1.4;
+		color: var(--text-light);
 	}
-	@media (prefers-reduced-motion: reduce) {
-		.scroll-hint .arrow { animation: none; }
-	}
-	@media (min-width: 1600px) {
-		.wall-masonry { column-count: 5; }
-	}
-	@media (max-width: 1024px) {
-		.wall-masonry { column-count: 3; }
-	}
-	@media (max-width: 640px) {
-		.wall-masonry { column-count: 2; }
-		.panel { padding: 1.25em 1em 1em; border-radius: 18px; }
-		.countdown .num { font-size: clamp(1.4em, 7.5vw, 2em); }
-		/* Spanish unit names ("segundos", "minutos") are longer than the English
-		   ones and were wrapping inside their column; drop the tracking and let
-		   them shrink a touch further so all five stay on one line. */
-		.countdown .lbl { font-size: 0.5em; letter-spacing: 0.02em; }
+	.hero-actions,
+	.cta-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6em;
 	}
 
-	/* ===== The sections under the hero ===== */
+	/* ===== Work, services, skills, contact ===== */
+	.work,
 	.services,
-	.skills {
+	.skills,
+	.cta {
 		margin-bottom: 4.5em;
 	}
+	.work h2,
 	.services h2,
 	.skills h2 {
 		margin-bottom: 0.9em;
+	}
+	.section-intro {
+		margin: -0.5em 0 1.5em;
+		color: var(--text-light);
+	}
+	.case-list {
+		border-bottom: 1px solid var(--border);
+	}
+	.case {
+		padding: 1.6em 0;
+		border-top: 1px solid var(--border);
+	}
+	.case-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.25em 1em;
+	}
+	.case-head h3 {
+		margin: 0;
+		font-size: 1.3em;
+	}
+	.case-when {
+		font-family: var(--mono);
+		font-size: 0.72em;
+		color: var(--text-light);
+	}
+	.case-role {
+		margin: 0.35em 0 0.8em;
+	}
+	.case-title {
+		margin: 0 0 0.7em;
+		font-size: 1.05em;
+		font-weight: 600;
+		line-height: 1.45;
+		color: var(--text-heading);
+	}
+	.case-points {
+		margin: 0 0 1em;
+		padding-left: 1.2em;
+		color: var(--text);
+		font-size: 0.93em;
+		line-height: 1.6;
+	}
+	.case-points li + li {
+		margin-top: 0.4em;
+	}
+	.work-more {
+		margin: 1em 0 0;
+		font-weight: 600;
 	}
 	/* Numbered rows rather than a grid of boxes: five long descriptions read
 	   better at full column width than squeezed two abreast. */
@@ -554,26 +501,170 @@ const person = {
 		max-width: 34em;
 		color: var(--text);
 	}
-	.cta-actions {
+
+	/* ===== Off the clock: the meme wall, the countdown, the life grid ===== */
+	.fun {
+		padding-top: 2.5em;
+		border-top: 1px dashed var(--border);
+	}
+	.fun .section-intro {
+		margin: 0;
+	}
+	.wall {
+		position: relative;
+		height: min(90vh, 900px);
+		height: min(90svh, 900px);
+		/* Full-bleed out of the 720px column. */
+		width: 100vw;
+		margin: 1.5em calc(50% - 50vw) 3em;
+		padding: 0;
+		overflow: hidden;
+		isolation: isolate;
+		background: #0a0a10;
+	}
+	/* Two jobs in one layer between the memes and the panel: pull the eye to
+	   the middle, and melt both edges of the wall into the page so it starts
+	   and ends in a fade rather than a hard line. */
+	.wall::after {
+		content: "";
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		pointer-events: none;
+		background:
+			radial-gradient(ellipse 60% 55% at 50% 50%, rgba(8, 10, 14, 0.5), transparent 75%),
+			linear-gradient(
+				to bottom,
+				var(--bg) 0,
+				rgba(13, 17, 23, 0.6) 10%,
+				transparent 24%,
+				transparent 70%,
+				rgba(13, 17, 23, 0.85) 88%,
+				var(--bg) 100%
+			);
+	}
+	.wall-masonry {
+		column-count: 4;
+		column-gap: 0.4em;
+		padding: 0.4em;
+	}
+	.wall-masonry .tile {
+		break-inside: avoid;
+		margin-bottom: 0.5em;
+		border-radius: 10px;
+		overflow: hidden;
+		position: relative;
+		background: hsl(calc(var(--seed, 0) * 47deg + 220deg) 14% 12%);
+	}
+	/* The tile's box comes from its inline aspect-ratio; the clip fills it.
+	   Clips sit back a little so the panel reads first; the one under the
+	   cursor comes forward. */
+	.wall-masonry .tile img,
+	.wall-masonry .tile video {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+		border-radius: 0;
+		opacity: 0.7;
+		transition: opacity 0.3s ease;
+	}
+	.wall-masonry .tile:hover img,
+	.wall-masonry .tile:hover video {
+		opacity: 1;
+	}
+	.wall-content {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
 		display: flex;
-		flex-wrap: wrap;
-		gap: 0.6em;
+		align-items: center;
+		justify-content: center;
+		padding: 1em;
+		pointer-events: none;
+	}
+	.panel {
+		pointer-events: auto;
+		width: 100%;
+		max-width: 660px;
+		padding: 1.5em 1.75em 1.15em;
+		text-align: center;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		border-radius: 22px;
+		background: linear-gradient(180deg, rgba(20, 24, 33, 0.7), rgba(10, 12, 18, 0.8));
+		backdrop-filter: blur(18px) saturate(150%);
+		-webkit-backdrop-filter: blur(18px) saturate(150%);
+		box-shadow:
+			0 30px 80px rgba(0, 0, 0, 0.55),
+			inset 0 1px 0 rgba(255, 255, 255, 0.08);
+	}
+	.countdown-label {
+		margin: 0 0 1em;
+		font-family: var(--mono);
+		font-size: 0.68em;
+		text-transform: uppercase;
+		letter-spacing: 0.24em;
+		color: rgba(255, 255, 255, 0.55);
+	}
+	.countdown-grid {
+		display: grid;
+		grid-template-columns: repeat(5, 1fr);
+	}
+	.countdown .unit {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 0.25em;
+	}
+	.countdown .unit + .unit {
+		border-left: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	.countdown .num {
+		font-family: var(--mono);
+		font-size: clamp(1.9em, 6vw, 3em);
+		font-weight: 600;
+		color: #fff;
+		line-height: 1;
+		letter-spacing: -0.02em;
+		font-variant-numeric: tabular-nums;
+	}
+	.countdown .lbl {
+		margin-top: 0.7em;
+		font-family: var(--mono);
+		font-size: 0.6em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: rgba(255, 255, 255, 0.5);
+	}
+	.countdown-foot {
+		margin: 1.1em 0 0;
+		font-size: 0.85em;
+		font-style: italic;
+		color: rgba(255, 255, 255, 0.55);
+	}
+	@media (min-width: 1600px) {
+		.wall-masonry { column-count: 5; }
+	}
+	@media (max-width: 1024px) {
+		.wall-masonry { column-count: 3; }
 	}
 	@media (max-width: 720px) {
-		/* On phones the full-bleed-under-header trick just clips the top row of
-		   memes behind the bar. Sit the hero flush *below* the header instead
-		   (-1.5em cancels the extra breathing room in main's top padding so the
-		   wall starts right at the header's bottom edge). */
-		.wall {
-			margin-top: -1.5em;
-			height: calc(100vh - var(--header-height));
-			height: calc(100svh - var(--header-height));
-		}
-		.wall-content {
+		.hero {
 			padding-top: 1em;
 		}
+		.proof {
+			grid-template-columns: 1fr 1fr;
+		}
+		.proof li:nth-child(3) {
+			border-left: 0;
+		}
+		.proof li:nth-child(n + 3) {
+			border-top: 1px solid var(--border);
+		}
+		.work,
 		.services,
-		.skills {
+		.skills,
+		.cta {
 			margin-bottom: 3.5em;
 		}
 		/* The label goes above its tags; the number above its title. */
@@ -593,5 +684,18 @@ const person = {
 		.cta h2 {
 			font-size: 1.7em;
 		}
+		.wall {
+			height: 80vh;
+			height: 80svh;
+		}
+	}
+	@media (max-width: 640px) {
+		.wall-masonry { column-count: 2; }
+		.panel { padding: 1.25em 1em 1em; border-radius: 18px; }
+		.countdown .num { font-size: clamp(1.4em, 7.5vw, 2em); }
+		/* Spanish unit names ("segundos", "minutos") are longer than the English
+		   ones and were wrapping inside their column; drop the tracking and let
+		   them shrink a touch further so all five stay on one line. */
+		.countdown .lbl { font-size: 0.5em; letter-spacing: 0.02em; }
 	}
 </style>

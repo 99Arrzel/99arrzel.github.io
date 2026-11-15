@@ -21,7 +21,8 @@ interface Props {
 const { lang } = Astro.props;
 const c = about[lang];
 const cv = localizePath('/cv', lang);
-const withCv = (html: string) => html.replaceAll('{cv}', cv);
+const resumeHref = localizePath('/resume', lang);
+const withCv = (html: string) => html.replaceAll('{cv}', cv).replaceAll('{resume}', resumeHref);
 
 // Career and education come from the same document the CV page opens with,
 // parsed at build time, so this page can't fall behind it. Sections are found

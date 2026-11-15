@@ -57,8 +57,8 @@ export const about: Record<Lang, AboutCopy> = {
 		contactHtml: [
 			`Find me on <a href="https://github.com/99arrzel" target="_blank">GitHub</a>
 			 or <a href="https://linkedin.com/in/99arrzel" target="_blank">LinkedIn</a>.`,
-			`Everything above is also on <a href="{cv}">my CV</a> &mdash; built with, and readable in,
-			 the <a href="{cv}">CV&nbsp;Press</a> builder I wrote for this site. It runs entirely in your
+			`Everything above is also on <a href="{resume}">my CV</a> &mdash; built with the
+			 <a href="{cv}">CV&nbsp;Press</a> builder I wrote for this site. It runs entirely in your
 			 browser, so you can load it up, overwrite it with your own details, and print your own.`,
 		],
 	},
@@ -92,8 +92,8 @@ export const about: Record<Lang, AboutCopy> = {
 		contactHtml: [
 			`Me encontrás en <a href="https://github.com/99arrzel" target="_blank">GitHub</a>
 			 o en <a href="https://linkedin.com/in/99arrzel" target="_blank">LinkedIn</a>.`,
-			`Todo lo de arriba está también en <a href="{cv}">mi CV</a> &mdash; hecho con, y legible en,
-			 el editor <a href="{cv}">CV&nbsp;Press</a> que escribí para este sitio. Corre entero en tu
+			`Todo lo de arriba está también en <a href="{resume}">mi CV</a> &mdash; hecho con el editor
+			 <a href="{cv}">CV&nbsp;Press</a> que escribí para este sitio. Corre entero en tu
 			 navegador, así que podés abrirlo, reemplazar mis datos por los tuyos e imprimir el tuyo.`,
 		],
 	},

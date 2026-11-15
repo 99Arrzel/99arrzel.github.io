@@ -27,10 +27,10 @@ const t = useTranslations(lang);
 			>
 		</a>
 	</div>
-	<!-- The two things the header has no room for. The feed is the Vault's, and
-	     is in English whichever locale links to it. -->
+	<!-- The CV again for whoever read to the bottom, and the feed. The feed is
+	     the Vault's, and is in English whichever locale links to it. -->
 	<p class="text-links">
-		<a href={localizePath('/cv', lang)}>{t('nav.cv')}</a>
+		<a href={localizePath('/resume', lang)}>{t('nav.cv')}</a>
 		<span aria-hidden="true">&middot;</span>
 		<a href="/rss.xml">{t('nav.rss')}</a>
 	</p>
