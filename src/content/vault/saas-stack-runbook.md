@@ -139,7 +139,7 @@ An opaque session id in an HTTP-only cookie, looked up in a `sessions` table, wi
 
 ## Real-time: SSE + `LISTEN/NOTIFY`
 
-Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service. WebSockets only earn their place when the browser has to push to the server, and nothing here does.
+Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service.
 
 1. Write the event row in Postgres.
 2. In the same transaction, `SELECT pg_notify('events', '<event id>')`. Postgres only delivers it **if the transaction commits**, so nobody hears about a rolled-back row.
@@ -147,6 +147,21 @@ Updates only go server → browser, so **Server-Sent Events** through an oRPC st
 4. On reconnect, the browser sends the last id it saw and the server replays the gap from Postgres.
 
 Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Move to Valkey only when there are many app processes.
+
+### SSE vs WebSockets
+
+**In one line:** SSE is a long HTTP response from the app I already run; WebSockets need a service or two more (a socket server, usually plus Valkey) and buy me the browser → server direction.
+
+| | SSE | WebSockets |
+|---|---|---|
+| Direction | Server → browser | Both ways |
+| Runs in | The existing Next.js app | Its own container (Next.js standalone can't upgrade a connection) |
+| Extra services | None | Socket server, plus Valkey or `LISTEN/NOTIFY` so the app can reach it |
+| Auth | The normal session cookie and middleware | Re-checked by hand on the upgrade request |
+| Reconnect | Built in; the browser resends the last event id | Written by me, along with heartbeats |
+| Pick it for | Notifications, job progress, live dashboards, streaming AI output | Chat with typing indicators, collaborative editing, cursors, multiplayer |
+
+Rule: start with SSE. Switch only when the browser has to send a steady stream of messages back; an occasional action is just a normal oRPC call.
 
 ## Files: Garage + presigned uploads
 
