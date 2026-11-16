@@ -21,12 +21,12 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 | Real-time | Server-Sent Events, fanned out with Postgres `LISTEN/NOTIFY` |
 | Files | Garage, uploaded straight from the browser with a presigned POST |
 | Payments | Stripe |
-| Background jobs | Postgres-backed queue in a worker container |
-| Runtime | Docker Compose + Caddy (automatic HTTPS) |
+| Background jobs | BullMQ on Valkey, run by a worker; Coolify Scheduled Tasks for plain crons |
+| Hosting | Coolify: deploys on git push, Traefik with automatic HTTPS, one-click Postgres, Valkey and Garage |
 
 <figure class="dg">
 <svg viewBox="0 0 1000 440" role="img" aria-labelledby="box-title" xmlns="http://www.w3.org/2000/svg">
-<title id="box-title">Browser to Cloudflare to Caddy on one HostHatch VPS. Caddy routes to the Next.js app and to Garage. The app and the worker use Postgres. Postgres and Garage are backed up nightly to an off-site bucket.</title>
+<title id="box-title">Browser to Cloudflare to Coolify's Traefik proxy on one HostHatch VPS. Traefik routes to the Next.js app and to Garage. The app uses Postgres and queues jobs in Valkey, which the worker pulls. Postgres and Garage are backed up nightly to an off-site bucket.</title>
 <style>
 .dg { margin: 2em 0; overflow-x: auto; }
 .dg svg { display: block; width: 100%; min-width: 720px; height: auto; }
@@ -50,7 +50,7 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 <marker id="dg-tip-hot" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" orient="auto-start-reverse"><path class="tip-hot" d="M0,0 L10,5 L0,10 z"/></marker>
 </defs>
 <rect class="vps" x="360" y="14" width="626" height="332" rx="14"/>
-<text class="tag" x="380" y="42">HostHatch VPS · 16 GB · $15/mo</text>
+<text class="tag" x="380" y="42">HostHatch VPS · Coolify · 16 GB · $15/mo</text>
 <rect class="box" x="14" y="166" width="140" height="68" rx="10"/>
 <text class="name" x="84" y="196">Browser</text>
 <text class="sub" x="84" y="218">users</text>
@@ -58,8 +58,8 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 <text class="name" x="260" y="196">Cloudflare</text>
 <text class="sub" x="260" y="218">DNS · proxy</text>
 <rect class="box" x="384" y="166" width="120" height="68" rx="10"/>
-<text class="name" x="444" y="196">Caddy</text>
-<text class="sub" x="444" y="218">HTTPS</text>
+<text class="name" x="444" y="196">Traefik</text>
+<text class="sub" x="444" y="218">via Coolify</text>
 <rect class="box" x="560" y="70" width="180" height="68" rx="10"/>
 <text class="name" x="650" y="100">Next.js app</text>
 <text class="sub" x="650" y="122">oRPC · SSE</text>
@@ -69,9 +69,12 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 <rect class="box" x="790" y="70" width="180" height="68" rx="10"/>
 <text class="name" x="880" y="100">Postgres</text>
 <text class="sub" x="880" y="122">data · NOTIFY</text>
+<rect class="box" x="790" y="166" width="180" height="68" rx="10"/>
+<text class="name" x="880" y="196">Valkey</text>
+<text class="sub" x="880" y="218">BullMQ queue</text>
 <rect class="box" x="790" y="262" width="180" height="68" rx="10"/>
 <text class="name" x="880" y="292">Worker</text>
-<text class="sub" x="880" y="314">jobs · crons</text>
+<text class="sub" x="880" y="314">BullMQ jobs</text>
 <rect class="box" x="660" y="370" width="326" height="58" rx="10"/>
 <text class="name" x="823" y="395">Off-site bucket</text>
 <text class="sub" x="823" y="415">nightly pg_dump + files</text>
@@ -80,7 +83,8 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 <line class="msg hot" x1="504" y1="186" x2="560" y2="122" marker-end="url(#dg-tip-hot)"/>
 <line class="msg hot" x1="504" y1="214" x2="560" y2="278" marker-end="url(#dg-tip-hot)"/>
 <line class="msg" x1="740" y1="104" x2="790" y2="104" marker-start="url(#dg-tip)" marker-end="url(#dg-tip)"/>
-<line class="msg" x1="880" y1="262" x2="880" y2="138" marker-end="url(#dg-tip)"/>
+<line class="msg" x1="740" y1="128" x2="790" y2="186" marker-end="url(#dg-tip)"/>
+<line class="msg" x1="880" y1="234" x2="880" y2="262" marker-end="url(#dg-tip)"/>
 <line class="msg ret" x1="823" y1="346" x2="823" y2="370" marker-end="url(#dg-tip)"/>
 <text class="label" x="508" y="160">app.</text>
 <text class="label" x="500" y="272">files.</text>
@@ -163,7 +167,7 @@ How the SSE side stays reliable:
 3. Each app process keeps one connection on `LISTEN events` and pushes the event to its open SSE streams.
 4. On reconnect, the browser sends the last id it saw and the server replays the gap from Postgres.
 
-Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Move to Valkey only when there are many app processes.
+Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Valkey is already on the box for jobs; move the fan-out to its pub/sub only once there are several app processes.
 
 ## Files: Garage + presigned uploads
 
@@ -229,56 +233,51 @@ Gotchas: the S3 client needs `forcePathStyle: true` and `region: 'garage'`; the 
 
 ## Payments and jobs
 
-- **Stripe.** The webhook is an ordinary route that calls a service.
-- **Jobs** go in a Postgres-backed queue (pg-boss style), run by a worker container that calls the same services. Still no extra datastore.
+**Stripe.** The webhook is an ordinary route that calls a service.
+
+**Jobs** come in two shapes, and both are a few clicks in Coolify:
+
+| | Cron | Queue |
+|---|---|---|
+| How | Coolify **Scheduled Task**: a command run on a schedule inside the app container | **BullMQ**: the app adds a job, a worker process picks it up |
+| Retries | None; a failed run waits for the next one | `attempts` with backoff |
+| Overlap | A slow run can collide with the next one | Concurrency 1 serialises them |
+| Extra services | None | Worker app + Valkey |
+| Pick it for | Nightly cleanup, reports, deleting orphan uploads | Anything a user triggered that must not be lost: emails, webhooks, imports |
+
+Start with Scheduled Tasks; move a job to BullMQ the first time it needs a retry. Once BullMQ is there, repeating jobs can live in it too via Job Schedulers (`upsertJobScheduler`; the old `repeat` option is gone in v6).
+
+BullMQ rules:
+
+- **Valkey holds the queue, so make it durable:** turn on AOF (`appendonly yes`; Valkey ships with it off) and keep `maxmemory-policy noeviction`. Coolify doesn't back up Valkey.
+- **Jobs run at least once.** Handlers must be safe to run twice.
+- **Set `removeOnComplete` / `removeOnFail`**, or finished jobs pile up forever.
+- **Shut down cleanly:** call `worker.close()` on SIGTERM. Docker kills the container 10 s later by default; a job cut off mid-run comes back as stalled and runs again.
+- No Valkey wanted? BullMQ v6 can run on Postgres instead — slower, but one less service.
 
 ## Standing it up
 
-**1. Server.** Ubuntu LTS, my SSH key, no password login. A HostHatch firewall group allowing only 22, 80 and 443 — the provider firewall, because ports Docker publishes bypass `ufw`.
+**1. Server.** Ubuntu 24.04 LTS, my SSH key, no password login. A HostHatch firewall group allowing 22, 80 and 443, plus 8000 only until the Coolify dashboard has its own domain. Use the provider firewall: ports Docker publishes bypass `ufw`.
 
-**2. DNS.** Add the domain to Cloudflare and point `@`, `app` and `files` at the server's IP with A records. Start them grey (DNS only) so Caddy can get its certificates, then turn the proxy on with SSL mode **Full (strict)**. Cloudflare's free plan caps uploads at 100 MB; if files get bigger, leave `files` grey.
+**2. Coolify.** `curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash`, then open `http://<ip>:8000` and create the admin account within 10 minutes. Set **Settings → URL** to `https://coolify.example.com` and close 8000. Copy `/data/coolify/source/.env` off the server: its `APP_KEY` decrypts everything Coolify stores.
 
-**3. Compose.**
+**3. DNS.** Add the domain to Cloudflare and point `@`, `app`, `files` and `coolify` at the server's IP with A records. Start them grey (DNS only) so Traefik can get its Let's Encrypt certificates, then turn the proxy on with SSL mode **Full (strict)**. Cloudflare's free plan caps uploads at 100 MB; if files get bigger, leave `files` grey.
 
-```yaml
-services:
-  caddy:
-    image: caddy:2
-    ports: ["80:80", "443:443"]
-    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy_data:/data]
-  app:
-    image: ghcr.io/<me>/<app>:latest
-    env_file: .env
-  worker:
-    image: ghcr.io/<me>/<app>:latest
-    env_file: .env
-    command: ["node", "worker.js"]
-  db:
-    image: postgres:18
-    env_file: .env
-    volumes: [pg_data:/var/lib/postgresql]
-  garage:
-    image: dxflrs/garage:v2.2.0
-    volumes: [./garage.toml:/etc/garage.toml:ro, garage_meta:/var/lib/garage/meta, garage_data:/var/lib/garage/data]
-volumes: { caddy_data: {}, pg_data: {}, garage_meta: {}, garage_data: {} }
-```
+**4. Resources**, all in one Coolify project:
 
-```
-app.example.com {
-	reverse_proxy app:3000
-}
-files.example.com {
-	reverse_proxy garage:3900
-}
-```
+| Resource | How | Notes |
+|---|---|---|
+| Postgres | One-click database | Internal only unless I opt in |
+| Valkey | One-click "Redis / Valkey" | AOF on, see BullMQ rules |
+| Garage | One-click service | Domain `files.example.com` on the S3 API; CORS rule allowing `POST` from the app |
+| App | GitHub repo through the GitHub App, Dockerfile build | Domain `app.example.com`; deploys on every push; start script runs `prisma migrate deploy` first |
+| Worker | Same repo again, built from `worker.Dockerfile` | No domain |
 
-Only Caddy publishes ports. `.env` and `garage.toml` live on the server, never in git. Garage needs a one-time setup (`docker compose exec garage /garage …`): `layout assign` + `layout apply`, `bucket create uploads`, `key create`, `bucket allow`.
+Environment variables live per resource in Coolify, never in git. Builds run on the same box, so a Next.js build makes it sluggish for a minute; a separate build server is an option later.
 
-**4. Deploy.** GitHub Actions: build the image, push to GHCR, SSH in, run migrations, `docker compose up -d app worker`.
+**5. Backups.** Postgres: a daily Coolify scheduled backup sent to an S3 bucket **outside HostHatch** (Backblaze B2, Cloudflare R2), with retention set. Garage's files: a nightly `rclone sync` to the same bucket. Coolify's own instance backup goes there too. Restore once before launch onto a fresh server and time it; a backup I've never restored is a guess.
 
-**5. Backups.** Nightly `pg_dump` and an `rclone sync` of the bucket, both to a bucket **outside HostHatch**. Restore once before launch onto a fresh server and time it; a backup I've never restored is a guess.
-
-**6. Monitoring.** An external uptime check on `/health` (which queries the database), alerting my phone.
+**6. Monitoring.** An external uptime check on `/health` (which queries the database), alerting my phone, plus Coolify's notifications for failed deploys and backups. If Coolify itself goes down, the apps keep serving; only deploys, scheduled tasks and backups stop.
 
 ## Legal: AI drafts, a lawyer reviews
 
