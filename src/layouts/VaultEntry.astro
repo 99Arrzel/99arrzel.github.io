@@ -15,11 +15,14 @@ type Props = CollectionEntry<'vault'>['data'] & {
 	/** The entry's id, so the menu can mark it. */
 	id: string;
 	minutes: number;
+	/** The entry's `##` sections, for the contents list at the top. */
+	sections: { slug: string; text: string }[];
 	newer?: Neighbour;
 	older?: Neighbour;
 };
 
-const { id, title, description, pubDate, updatedDate, topic, heroImage, minutes, newer, older } = Astro.props;
+const { id, title, description, pubDate, updatedDate, topic, heroImage, minutes, sections, newer, older } =
+	Astro.props;
 const topicMeta = VAULT_TOPICS[topic];
 ---
 
@@ -54,6 +57,20 @@ const topicMeta = VAULT_TOPICS[topic];
 					</div>
 				)}
 				<hr />
+				{
+					sections.length >= 3 && (
+						<nav class="toc" aria-label="On this page">
+							<p class="toc-label">On this page</p>
+							<ol>
+								{sections.map((s) => (
+									<li>
+										<a href={`#${s.slug}`}>{s.text}</a>
+									</li>
+								))}
+							</ol>
+						</nav>
+					)
+				}
 				<div class="prose">
 					<slot />
 				</div>
@@ -123,6 +140,44 @@ const topicMeta = VAULT_TOPICS[topic];
 	}
 	hr {
 		margin: 0 0 2em 0;
+	}
+	/* Jump links to each section, spread across the pane's width. */
+	.toc {
+		margin: 0 0 2.5em;
+		padding: 1em 1.25em;
+		background: var(--bg-secondary);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+	}
+	.toc-label {
+		margin: 0 0 0.6em;
+		font-family: var(--mono);
+		font-size: 0.68em;
+		text-transform: uppercase;
+		letter-spacing: 0.14em;
+		color: var(--text-light);
+	}
+	.toc ol {
+		columns: 3 14em;
+		column-gap: 2em;
+		margin: 0;
+		padding-left: 1.4em;
+		font-size: 0.9em;
+	}
+	.toc li {
+		break-inside: avoid;
+		padding: 0.15em 0;
+	}
+	.toc li::marker {
+		font-family: var(--mono);
+		color: var(--text-light);
+	}
+	.toc a {
+		color: var(--text);
+		text-decoration: none;
+	}
+	.toc a:hover {
+		color: var(--accent);
 	}
 	/* The rendered markdown. Global rules in global.css already style headings,
 	   paragraphs, code, blockquotes and (responsively) images inside here. */

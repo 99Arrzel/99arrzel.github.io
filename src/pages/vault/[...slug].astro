@@ -15,11 +15,12 @@ export async function getStaticPaths() {
 }
 
 const { entry, newer, older } = Astro.props;
-const { Content } = await render(entry);
+const { Content, headings } = await render(entry);
+const sections = headings.filter((h) => h.depth === 2).map(({ slug, text }) => ({ slug, text }));
 // At an unhurried 200 words a minute, counted on the markdown source.
 const minutes = Math.max(1, Math.round((entry.body ?? '').split(/\s+/).filter(Boolean).length / 200));
 ---
 
-<VaultEntry {...entry.data} id={entry.id} minutes={minutes} newer={newer} older={older}>
+<VaultEntry {...entry.data} id={entry.id} minutes={minutes} sections={sections} newer={newer} older={older}>
 	<Content />
 </VaultEntry>

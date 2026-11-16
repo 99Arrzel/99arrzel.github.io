@@ -139,18 +139,7 @@ An opaque session id in an HTTP-only cookie, looked up in a `sessions` table, wi
 
 ## Real-time: SSE + `LISTEN/NOTIFY`
 
-Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service.
-
-1. Write the event row in Postgres.
-2. In the same transaction, `SELECT pg_notify('events', '<event id>')`. Postgres only delivers it **if the transaction commits**, so nobody hears about a rolled-back row.
-3. Each app process keeps one connection on `LISTEN events` and pushes the event to its open SSE streams.
-4. On reconnect, the browser sends the last id it saw and the server replays the gap from Postgres.
-
-Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Move to Valkey only when there are many app processes.
-
-### SSE vs WebSockets
-
-**In one line:** SSE is a long HTTP response from the app I already run; WebSockets need a service or two more (a socket server, usually plus Valkey) and buy me the browser → server direction.
+**SSE by default.** It's a long HTTP response from the Next.js app I already run, through an oRPC streaming procedure (`eventIterator`), behind the normal auth. WebSockets need a service or two more (a socket server, usually plus Valkey) and only buy the browser → server direction.
 
 | | SSE | WebSockets |
 |---|---|---|
@@ -161,7 +150,16 @@ Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on
 | Reconnect | Built in; the browser resends the last event id | Written by me, along with heartbeats |
 | Pick it for | Notifications, job progress, live dashboards, streaming AI output | Chat with typing indicators, collaborative editing, cursors, multiplayer |
 
-Rule: start with SSE. Switch only when the browser has to send a steady stream of messages back; an occasional action is just a normal oRPC call.
+Switch only when the browser has to send a steady stream of messages back; an occasional action is just a normal oRPC call.
+
+How the SSE side stays reliable:
+
+1. Write the event row in Postgres.
+2. In the same transaction, `SELECT pg_notify('events', '<event id>')`. Postgres only delivers it **if the transaction commits**, so nobody hears about a rolled-back row.
+3. Each app process keeps one connection on `LISTEN events` and pushes the event to its open SSE streams.
+4. On reconnect, the browser sends the last id it saw and the server replays the gap from Postgres.
+
+Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Move to Valkey only when there are many app processes.
 
 ## Files: Garage + presigned uploads
 
