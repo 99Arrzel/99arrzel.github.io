@@ -1,68 +1,113 @@
 ---
 title: 'My default SaaS stack (a runbook)'
-description: 'One cheap VPS, Astro or Next.js, oRPC over plain service and repository functions, Postgres for almost everything. What I pick, why, and the steps to stand it up.'
+description: 'One $15 VPS, Astro or Next.js, oRPC over plain functions, Postgres for almost everything. What I pick and how I stand it up.'
 pubDate: 'Nov 15 2026'
 topic: 'building'
 ---
 
-This is the stack I reach for when I want to ship a small SaaS without thinking about the stack. It's the same shape as PostReminder, minus the parts a one-person product doesn't need. Most of it an agent can scaffold in one go, and when I code by hand I start from here too.
+The stack I reach for when I want to ship a small SaaS without thinking about the stack. Same shape as PostReminder, minus what a one-person product doesn't need. Every choice is the boring one on purpose, and an agent can scaffold most of it in one go.
 
-It's a starting point. Every choice is the boring one on purpose.
+## The stack
 
-## The stack at a glance
+| Layer | Pick |
+|---|---|
+| Server | HostHatch NVMe 16 GB, $15/month |
+| DNS + edge | Cloudflare |
+| Static pages | Astro + Markdown |
+| App | Next.js + oRPC |
+| Backend code | Plain functions: routes → services → repositories |
+| Database | Postgres + Prisma |
+| Auth | Session cookie + `sessions` table, password + Google (PostReminder's) |
+| Real-time | Server-Sent Events, fanned out with Postgres `LISTEN/NOTIFY` |
+| Files | Garage, uploaded straight from the browser with a presigned POST |
+| Payments | Stripe |
+| Background jobs | Postgres-backed queue in a worker container |
+| Runtime | Docker Compose + Caddy (automatic HTTPS) |
 
-| Layer | Pick | Why |
-|---|---|---|
-| Server | One HostHatch NVMe 16 GB VPS, $15/month | Lowest price per GB of RAM I've found, AMD EPYC + NVMe |
-| Static site / docs / landing | Astro + Markdown | Content is files; nothing to run |
-| Web app | Next.js (React) | Most popular, easiest React setup, agents know it best |
-| API | oRPC | End-to-end types, and the same routes can be exposed as OpenAPI later |
-| Backend code | Plain functions: routes → services → repositories | No classes, no DI container; easy to read, easy to test |
-| Database | Postgres | Relational covers ~99% of what I build |
-| Real-time | Server-Sent Events through oRPC, fanned out with Postgres `LISTEN/NOTIFY` | Server → browser is all I need; no extra service |
-| File storage | Garage (S3-compatible) on the same box; the browser uploads straight to it with a presigned POST | Same as PostReminder; file bytes never pass through the app |
-| Reverse proxy + TLS | Caddy | Automatic HTTPS, two-line config |
-| Runtime | Docker Compose on the VPS | One file describes the whole box |
+<figure class="dg">
+<svg viewBox="0 0 1000 440" role="img" aria-labelledby="box-title" xmlns="http://www.w3.org/2000/svg">
+<title id="box-title">Browser to Cloudflare to Caddy on one HostHatch VPS. Caddy routes to the Next.js app and to Garage. The app and the worker use Postgres. Postgres and Garage are backed up nightly to an off-site bucket.</title>
+<style>
+.dg { margin: 2em 0; overflow-x: auto; }
+.dg svg { display: block; width: 100%; min-width: 720px; height: auto; }
+.dg .box { fill: var(--bg-secondary); stroke: var(--border); stroke-width: 1.5; }
+.dg .vps { fill: none; stroke: var(--accent); stroke-width: 1.5; stroke-dasharray: 8 6; }
+.dg .name { fill: var(--text-heading); font: 600 18px var(--mono); text-anchor: middle; }
+.dg .sub { fill: var(--text-light); font: 14px var(--mono); text-anchor: middle; }
+.dg .tag { fill: var(--accent); font: 600 15px var(--mono); }
+.dg .msg { stroke: var(--text-light); stroke-width: 2; fill: none; }
+.dg .ret { stroke-dasharray: 7 6; }
+.dg .hot { stroke: var(--accent); stroke-width: 3.5; }
+.dg .tip { fill: var(--text-light); }
+.dg .tip-hot { fill: var(--accent); }
+.dg .life { stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 4 6; }
+.dg .label { fill: var(--text); font: 16px var(--mono); text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 7px; stroke-linejoin: round; }
+.dg .label-hot { fill: var(--accent); font-weight: 600; }
+.dg figcaption { color: var(--text-light); font-size: 0.85em; margin-top: 0.6em; }
+</style>
+<defs>
+<marker id="dg-tip" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="12" markerHeight="12" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker>
+<marker id="dg-tip-hot" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="15" markerHeight="15" orient="auto-start-reverse"><path class="tip-hot" d="M0,0 L10,5 L0,10 z"/></marker>
+</defs>
+<rect class="vps" x="360" y="14" width="626" height="332" rx="14"/>
+<text class="tag" x="380" y="42">HostHatch VPS · 16 GB · $15/mo</text>
+<rect class="box" x="14" y="166" width="140" height="68" rx="10"/>
+<text class="name" x="84" y="196">Browser</text>
+<text class="sub" x="84" y="218">users</text>
+<rect class="box" x="190" y="166" width="140" height="68" rx="10"/>
+<text class="name" x="260" y="196">Cloudflare</text>
+<text class="sub" x="260" y="218">DNS · proxy</text>
+<rect class="box" x="384" y="166" width="120" height="68" rx="10"/>
+<text class="name" x="444" y="196">Caddy</text>
+<text class="sub" x="444" y="218">HTTPS</text>
+<rect class="box" x="560" y="70" width="180" height="68" rx="10"/>
+<text class="name" x="650" y="100">Next.js app</text>
+<text class="sub" x="650" y="122">oRPC · SSE</text>
+<rect class="box" x="560" y="262" width="180" height="68" rx="10"/>
+<text class="name" x="650" y="292">Garage</text>
+<text class="sub" x="650" y="314">files · S3 API</text>
+<rect class="box" x="790" y="70" width="180" height="68" rx="10"/>
+<text class="name" x="880" y="100">Postgres</text>
+<text class="sub" x="880" y="122">data · NOTIFY</text>
+<rect class="box" x="790" y="262" width="180" height="68" rx="10"/>
+<text class="name" x="880" y="292">Worker</text>
+<text class="sub" x="880" y="314">jobs · crons</text>
+<rect class="box" x="660" y="370" width="326" height="58" rx="10"/>
+<text class="name" x="823" y="395">Off-site bucket</text>
+<text class="sub" x="823" y="415">nightly pg_dump + files</text>
+<line class="msg hot" x1="154" y1="200" x2="190" y2="200" marker-end="url(#dg-tip-hot)"/>
+<line class="msg hot" x1="330" y1="200" x2="384" y2="200" marker-end="url(#dg-tip-hot)"/>
+<line class="msg hot" x1="504" y1="186" x2="560" y2="122" marker-end="url(#dg-tip-hot)"/>
+<line class="msg hot" x1="504" y1="214" x2="560" y2="278" marker-end="url(#dg-tip-hot)"/>
+<line class="msg" x1="740" y1="104" x2="790" y2="104" marker-start="url(#dg-tip)" marker-end="url(#dg-tip)"/>
+<line class="msg" x1="880" y1="262" x2="880" y2="138" marker-end="url(#dg-tip)"/>
+<line class="msg ret" x1="823" y1="346" x2="823" y2="370" marker-end="url(#dg-tip)"/>
+<text class="label" x="508" y="160">app.</text>
+<text class="label" x="500" y="272">files.</text>
+</svg>
+<figcaption>Everything runs on one box. Only the backups leave it.</figcaption>
+</figure>
 
-## The server: one cheap VPS
-
-I take the cheapest VPS that fits and put everything on it. For a product with no users yet, that's correct, not reckless — I just have to be honest about what I'm accepting: one box means one point of failure. If it dies, the product is down until I restore it. That's fine **only** if the restore is rehearsed (see backups).
-
-HostHatch compute VMs as advertised in November 2026 (USD, monthly billing):
+## Server: HostHatch, 16 GB for $15
 
 | Plan | Cores | RAM | NVMe | Transfer | $/month |
 |---|---|---|---|---|---|
-| NVMe 2 GB | 1 shared | 2 GB | 10 GB | 1 TB | 4 |
-| NVMe 4 GB | 2 shared | 4 GB | 20 GB | 1 TB | 6 |
 | NVMe 8 GB | 2 shared | 8 GB | 35 GB | 2 TB | 9 |
 | NVMe 12 GB | 1 dedicated + 3 shared | 12 GB | 50 GB | 3 TB | 12 |
-| NVMe 16 GB | 2 dedicated + 2 shared | 16 GB | 75 GB | 4 TB | 15 |
+| **NVMe 16 GB** | **2 dedicated + 2 shared** | **16 GB** | **75 GB** | **4 TB** | **15** |
 
-- **The pick: NVMe 16 GB at $15/month.** Next.js, Postgres, Garage and a worker fit with room to spare, and its two dedicated cores keep Postgres steady. Cheap enough that there's no reason to start smaller; the 8 GB plan at $9 is only for a throwaway prototype.
-- **Why not Hetzner:** it's cheap, just not this cheap. After its June 2026 price rise, 8 GB is €8.49 and 16 GB is €15.99, both plus €0.50 for IPv4 and VAT, against $9 and $15 here — and HostHatch's 16 GB plan includes dedicated cores.
-- **Disk will run out before RAM**, and I accept that. 75 GB holds the OS, Docker images, Postgres and Garage's files for a long while; prune old images on every deploy and watch `df`. When uploads outgrow it, Garage moves to a HostHatch storage VM in the same location (advertised from $5/month for 1 TB) over the private network, and nothing else changes.
-- **Transfer counts both directions** and the server is throttled to 5 Mbps once the monthly quota runs out. Nightly off-box backups count against it too.
-- **Billing is strict**: per the terms, an unpaid invoice can mean suspension after 2 days and deletion after 5. Auto-pay with a card that won't expire, and keep backups outside the account.
-- The other two cores are "fair-share" (shared with neighbours). Fine for a web app; if Postgres ever becomes CPU-bound, the next plans up add more dedicated cores.
+- Cheaper than Hetzner, whose 16 GB plan is €15.99 plus IPv4 and VAT since its June 2026 price rise, with no dedicated cores.
+- **Disk runs out before RAM.** When uploads outgrow 75 GB, Garage moves to a HostHatch storage VM (from $5/month for 1 TB) on the private network.
+- **Billing is strict:** an unpaid invoice can mean deletion after 5 days. Auto-pay, and keep backups outside the account.
 
-## Frontend: Astro or Next.js
+## Frontend
 
-The rule is one question: **does the page need a logged-in user or live data?**
-
-- **No** → Astro. Landing page, docs, blog, changelog. Markdown files in a repo, deployed as static HTML. This site works that way.
-- **Yes** → Next.js. The app itself, the admin panel. React, App Router, and the `output: "standalone"` build so it ships as one small Docker image.
+- No login, no live data → **Astro** and Markdown, shipped as static HTML.
+- Everything else → **Next.js**, built with `output: "standalone"` into one Docker image.
 
 ## Backend: routes, services, repositories
 
-Same layering as PostReminder, kept small. Three kinds of function, one direction of calls:
-
-| Layer | Owns | Must not |
-|---|---|---|
-| Route (oRPC procedure) | Input validation (Zod), auth middleware, response shape | Talk to the database, hold business logic |
-| Service | Business rules, transaction boundaries | Write queries |
-| Repository | Queries, nothing else | Make business decisions |
-
-Every service takes a context (who is calling, which tenant, the db client) as its first argument. Every repository takes the database executor — the client or the open transaction — as its first argument, always explicitly, so a transaction can't be dropped by accident.
+Routes validate input and check access. Services hold the business rules. Repositories are the only code that touches Prisma, and they always take the database client or the open transaction as their first argument. Crons and jobs call the same services directly, never over HTTP.
 
 ```ts
 // route
@@ -78,131 +123,79 @@ export async function create(ctx: Ctx, input: { name: string }) {
   return projectRepo.insert(ctx.db, { ownerId: ctx.user.id, name: input.name });
 }
 
-// repository (Drizzle syntax here; the ORM is still open, see the end)
-export function insert(db: DbOrTx, row: NewProject) {
-  return db.insert(projects).values(row).returning();
+// repository
+export function insert(db: DbOrTx, data: Prisma.ProjectUncheckedCreateInput) {
+  return db.project.create({ data });
 }
 ```
 
-Crons and background jobs call the **same services** with a system context. They never go through HTTP.
+## Database: Postgres + Prisma
 
-## Database: Postgres, almost always
+What I build is relational, so Postgres; the odd loose document goes in a `jsonb` column. Prisma because I know it from PostReminder. Defaults I carry over: UUID v7 ids (never a sequential id in a URL), additive-only migrations, `deletedAt` soft delete, and Postgres never exposed to the internet.
 
-I don't need a document database. What I build is relational — users, workspaces, subscriptions, things that belong to other things — and Postgres models that directly. When part of the data really is a loose document (settings, third-party webhook payloads), a `jsonb` column holds it and can still be indexed and queried. Mongo has its own market; nothing I plan to build is in it.
+## Auth
 
-Defaults I carry over from PostReminder:
+PostReminder's setup: an opaque session id in an HTTP-only cookie, looked up in a `sessions` table, with password and Google sign-in. Libraries like Better Auth or Auth.js would cover the same ground; I stay with the one I already know end to end.
 
-- **UUID v7** primary keys. Never expose a sequential id in a URL or an API.
-- **Additive migrations only.** Dropping or renaming a column is a two-step deploy, because migrations run before the new code is live.
-- **Soft delete** (`deleted_at`) on domain tables.
-- Postgres listens on the private Docker network only. It is never published to the internet.
+## Real-time: SSE + `LISTEN/NOTIFY`
 
-## Real-time: SSE, with Postgres doing the fan-out
+Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service. PostReminder chose it because a WebSocket service meant another AWS service I'm not the admin for, and nothing pushes from the user to the server anyway.
 
-Most "real-time" features are the server telling the browser something happened: notifications, a job finished, a counter changed. That's one-directional, so I use **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal session auth and middleware for free, and it runs inside the Next.js server — no second service.
+1. Write the event row in Postgres.
+2. In the same transaction, `SELECT pg_notify('events', '<event id>')`. Postgres only delivers it **if the transaction commits**, so nobody hears about a rolled-back row.
+3. Each app process keeps one connection on `LISTEN events` and pushes the event to its open SSE streams.
+4. On reconnect, the browser sends the last id it saw and the server replays the gap from Postgres.
 
-PostReminder made the same call, for two reasons. WebSockets there would have meant spinning up another service on AWS, and I'm not the AWS admin, so that was off the table. And nothing in the product pushes from the user to the server — updates only flow server → user. SSE was simply the option that ships. On my own VPS I *could* run a WebSocket service, but the second reason still holds, so the answer doesn't change.
+Send ids, not data (payloads cap at 8000 bytes). Keep oRPC's keep-alive pings on (the default): Cloudflare drops connections that sit idle for 100 seconds. Move to Valkey only when there are many app processes.
 
-The pattern that makes it reliable:
+## Files: Garage + presigned uploads
 
-1. Write the event to Postgres first. Postgres is the record.
-2. Then publish it to a pub/sub channel. Pub/sub is transport only; a lost message is fine.
-3. On reconnect, the client sends the last id it saw and the server replays the gap from Postgres.
+File bytes never pass through the backend. The app signs a short-lived upload; the browser sends the file straight to Garage.
 
-For the pub/sub I use **Postgres `LISTEN/NOTIFY`** instead of Valkey or Redis. It's already running, and it has one property Valkey can't give me: a `NOTIFY` sent inside a transaction is only delivered **if that transaction commits**. Steps 1 and 2 become one atomic write, so a listener can never hear about a row that got rolled back.
-
-```sql
--- write path, inside the same transaction as the INSERT
-SELECT pg_notify('events', '<event id>');
-
--- each app process keeps one dedicated connection open that ran:
-LISTEN events;
-```
-
-Rules that keep it out of trouble:
-
-- **Send ids, not data.** The payload limit is 8000 bytes; the listener loads the row from Postgres anyway.
-- **One listening connection per process**, held directly — not through a pooler in transaction mode, which drops `LISTEN`.
-- **Switch to Valkey** only when this stops fitting: many app processes, or a lot of messages per second.
-
-A separate **WebSocket service** stays reserved for genuinely two-way, high-frequency traffic: chat with typing indicators, collaborative editing, multiplayer. Next.js's standalone server can't accept WebSocket upgrades, so that would be its own container on the same box.
-
-## File storage: Garage and presigned uploads
-
-Files live in **Garage**, the same S3-compatible store PostReminder runs, as one more container on the box. The one rule: **file bytes never go through my backend.** The app only signs a short-lived upload permission; the browser sends the file straight to Garage.
-
-<figure class="seq-diagram">
-<svg viewBox="0 0 900 470" role="img" aria-labelledby="upload-flow-title" xmlns="http://www.w3.org/2000/svg">
-<title id="upload-flow-title">Presigned upload: the browser asks the app for a signed policy, posts the file directly to Garage, then registers the key with the app, which checks it in Garage and records it in Postgres.</title>
-<style>
-.seq-diagram { overflow-x: auto; }
-.seq-diagram svg { width: 100%; min-width: 640px; height: auto; display: block; }
-.seq-diagram .box { fill: var(--bg-secondary); stroke: var(--border); }
-.seq-diagram .name { fill: var(--text-heading); font: 600 15px var(--mono); text-anchor: middle; }
-.seq-diagram .sub { fill: var(--text-light); font: 12px var(--mono); text-anchor: middle; }
-.seq-diagram .life { stroke: var(--border); stroke-dasharray: 4 5; }
-.seq-diagram .msg { stroke: var(--text-light); stroke-width: 1.5; fill: none; }
-.seq-diagram .ret { stroke-dasharray: 6 5; }
-.seq-diagram .hot { stroke: var(--accent); stroke-width: 3; }
-.seq-diagram .tip { fill: var(--text-light); }
-.seq-diagram .tip-hot { fill: var(--accent); }
-.seq-diagram .label { fill: var(--text); font: 13px var(--mono); text-anchor: middle; paint-order: stroke; stroke: var(--bg); stroke-width: 6px; stroke-linejoin: round; }
-.seq-diagram .label-hot { fill: var(--accent); font-weight: 600; }
-.seq-diagram figcaption { color: var(--text-light); font-size: 0.9em; margin-top: 0.5em; }
-</style>
-<defs>
-<marker id="seq-tip" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="10" markerHeight="10" orient="auto-start-reverse"><path class="tip" d="M0,0 L10,5 L0,10 z"/></marker>
-<marker id="seq-tip-hot" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="userSpaceOnUse" markerWidth="13" markerHeight="13" orient="auto-start-reverse"><path class="tip-hot" d="M0,0 L10,5 L0,10 z"/></marker>
-</defs>
-<rect class="box" x="10" y="12" width="160" height="56" rx="8"/>
-<text class="name" x="90" y="37">Browser</text>
-<text class="sub" x="90" y="56">client</text>
-<rect class="box" x="260" y="12" width="160" height="56" rx="8"/>
-<text class="name" x="340" y="37">App</text>
-<text class="sub" x="340" y="56">Next.js + oRPC</text>
-<rect class="box" x="510" y="12" width="160" height="56" rx="8"/>
-<text class="name" x="590" y="37">Garage</text>
-<text class="sub" x="590" y="56">S3 API</text>
-<rect class="box" x="730" y="12" width="160" height="56" rx="8"/>
-<text class="name" x="810" y="37">Postgres</text>
-<text class="sub" x="810" y="56">record</text>
-<line class="life" x1="90" y1="68" x2="90" y2="460"/>
-<line class="life" x1="340" y1="68" x2="340" y2="460"/>
-<line class="life" x1="590" y1="68" x2="590" y2="460"/>
-<line class="life" x1="810" y1="68" x2="810" y2="460"/>
-<line class="msg" x1="90" y1="110" x2="340" y2="110" marker-end="url(#seq-tip)"/>
-<text class="label" x="215" y="101">1  presign({ name, type })</text>
-<line class="msg ret" x1="340" y1="155" x2="90" y2="155" marker-end="url(#seq-tip)"/>
-<text class="label" x="215" y="146">2  { url, fields, key }</text>
-<line class="msg hot" x1="90" y1="210" x2="590" y2="210" marker-end="url(#seq-tip-hot)"/>
-<text class="label label-hot" x="340" y="200">3  POST the file straight to Garage</text>
-<line class="msg ret" x1="590" y1="255" x2="90" y2="255" marker-end="url(#seq-tip)"/>
-<text class="label" x="340" y="246">4  204 · Garage enforced size + type</text>
-<line class="msg" x1="90" y1="310" x2="340" y2="310" marker-end="url(#seq-tip)"/>
-<text class="label" x="215" y="301">5  register({ key })</text>
-<line class="msg" x1="340" y1="355" x2="590" y2="355" marker-end="url(#seq-tip)"/>
-<text class="label" x="465" y="346">6  HEAD key: size, type</text>
-<line class="msg" x1="340" y1="400" x2="810" y2="400" marker-end="url(#seq-tip)"/>
-<text class="label" x="575" y="391">7  INSERT the file row</text>
-<line class="msg ret" x1="340" y1="445" x2="90" y2="445" marker-end="url(#seq-tip)"/>
-<text class="label" x="215" y="436">8  { id, url }</text>
+<figure class="dg">
+<svg viewBox="0 0 1000 480" role="img" aria-labelledby="upload-title" xmlns="http://www.w3.org/2000/svg">
+<title id="upload-title">The browser asks the app for a presigned POST, sends the file straight to Garage, then registers the key. The app checks the object in Garage and saves a row in Postgres.</title>
+<rect class="box" x="25" y="12" width="170" height="64" rx="10"/>
+<text class="name" x="110" y="40">Browser</text>
+<text class="sub" x="110" y="62">client</text>
+<rect class="box" x="315" y="12" width="170" height="64" rx="10"/>
+<text class="name" x="400" y="40">App</text>
+<text class="sub" x="400" y="62">Next.js + oRPC</text>
+<rect class="box" x="605" y="12" width="170" height="64" rx="10"/>
+<text class="name" x="690" y="40">Garage</text>
+<text class="sub" x="690" y="62">S3 API</text>
+<rect class="box" x="815" y="12" width="170" height="64" rx="10"/>
+<text class="name" x="900" y="40">Postgres</text>
+<text class="sub" x="900" y="62">record</text>
+<line class="life" x1="110" y1="76" x2="110" y2="470"/>
+<line class="life" x1="400" y1="76" x2="400" y2="470"/>
+<line class="life" x1="690" y1="76" x2="690" y2="470"/>
+<line class="life" x1="900" y1="76" x2="900" y2="470"/>
+<line class="msg" x1="110" y1="120" x2="400" y2="120" marker-end="url(#dg-tip)"/>
+<text class="label" x="255" y="109">1 presign({ type })</text>
+<line class="msg ret" x1="400" y1="168" x2="110" y2="168" marker-end="url(#dg-tip)"/>
+<text class="label" x="255" y="157">2 { url, fields, key }</text>
+<line class="msg hot" x1="110" y1="222" x2="690" y2="222" marker-end="url(#dg-tip-hot)"/>
+<text class="label label-hot" x="400" y="209">3 POST the file straight to Garage</text>
+<line class="msg ret" x1="690" y1="270" x2="110" y2="270" marker-end="url(#dg-tip)"/>
+<text class="label" x="400" y="259">4 204 · size + type checked</text>
+<line class="msg" x1="110" y1="324" x2="400" y2="324" marker-end="url(#dg-tip)"/>
+<text class="label" x="255" y="313">5 register({ key })</text>
+<line class="msg" x1="400" y1="372" x2="690" y2="372" marker-end="url(#dg-tip)"/>
+<text class="label" x="545" y="361">6 HEAD key</text>
+<line class="msg" x1="400" y1="420" x2="900" y2="420" marker-end="url(#dg-tip)"/>
+<text class="label" x="650" y="409">7 INSERT file row</text>
+<line class="msg ret" x1="400" y1="462" x2="110" y2="462" marker-end="url(#dg-tip)"/>
+<text class="label" x="255" y="451">8 { id }</text>
 </svg>
-<figcaption>The only arrow that carries the file (3) skips the app entirely. The app signs, checks and records.</figcaption>
+<figcaption>Only arrow 3 carries the file, and it skips the app. The app signs, checks and records.</figcaption>
 </figure>
 
-Step by step:
-
-1. **Presign.** The browser asks for an upload. The route checks auth, plan limits and the content type, picks the key itself (`<workspace>/<uuid v7>`, never the user's filename), and signs a **presigned POST** policy that expires in minutes.
-2. The app returns the Garage URL, the signed form fields, and the key.
-3. **Upload.** The browser posts the file as a form directly to Garage.
-4. Garage checks the signed policy before accepting a byte: a file over the size limit or with a different content type is rejected there. This is why it's a presigned **POST**, not a presigned PUT — the policy can carry a `content-length-range`.
-5. **Register.** The browser tells the app which key it uploaded.
-6. The app `HEAD`s the object in Garage to confirm it exists and to read its real size and type — never trust the client's word for it.
-7. Only then does the file get a row in Postgres.
-8. The app returns the file's id; reads go through a short-lived presigned GET (or a public bucket for truly public assets).
+- **Presigned POST, not PUT:** the signed policy carries a size range and content type, and Garage rejects a bad file before storing it.
+- The app picks the key (`<workspace>/<uuid v7>`), never the user's filename.
+- After the upload, the app checks the object with a `HEAD` request for its real size and type before saving the row. Never trust the client.
 
 ```ts
-// route: sign the upload (same shape as PostReminder's presign route)
 const { url, fields } = await createPresignedPost(garage, {
   Bucket: 'uploads',
   Key: `${ctx.workspace.id}/${uuidv7()}`,
@@ -213,112 +206,72 @@ const { url, fields } = await createPresignedPost(garage, {
   Fields: { 'Content-Type': input.type },
   Expires: 600,
 });
-
-// browser: the file goes last in the form
-const form = new FormData();
-for (const [k, v] of Object.entries(fields)) form.append(k, v);
-form.append('file', file);
-await fetch(url, { method: 'POST', body: form });
 ```
 
-Details that bite:
+Gotchas: the S3 client needs `forcePathStyle: true` and `region: 'garage'`; the bucket needs a CORS rule allowing `POST` from the app's origin; rate-limit the presign route; a nightly job deletes uploads that were never registered.
 
-- The S3 client points at Garage: `endpoint: 'https://files.example.com'`, `region: 'garage'`, `forcePathStyle: true`.
-- The bucket needs a **CORS rule** allowing `POST` from the app's origin, or the browser blocks step 3. Garage supports `PutBucketCors`.
-- Rate-limit the presign route. A signed policy is a write credential; without a limit, anyone logged in can mint them and fill the disk.
-- Uploads that are never registered leave orphan objects. A nightly job deletes objects older than a day that have no row.
+## Payments and jobs
+
+- **Stripe.** The webhook is an ordinary route that calls a service.
+- **Jobs** go in a Postgres-backed queue (pg-boss style), run by a worker container that calls the same services. Still no extra datastore.
 
 ## Standing it up
 
-### 1. Provision
+**1. Server.** Ubuntu LTS, my SSH key, no password login. A HostHatch firewall group allowing only 22, 80 and 443 — the provider firewall, because ports Docker publishes bypass `ufw`.
 
-1. Create the VM in the HostHatch panel with Ubuntu LTS and my SSH key, in the location closest to my users. No password login.
-2. Attach a **HostHatch firewall group** allowing only 22, 80 and 443. Use the provider firewall, not just `ufw`: ports published by Docker bypass `ufw` rules.
-3. On the box: create a non-root user with sudo, set `PasswordAuthentication no` in sshd, enable `unattended-upgrades`, install Docker.
-4. Point DNS (`app.example.com`, `files.example.com`, `example.com`) at the server's IP.
+**2. DNS.** Add the domain to Cloudflare and point `@`, `app` and `files` at the server's IP with A records. Start them grey (DNS only) so Caddy can get its certificates, then turn the proxy on with SSL mode **Full (strict)**. Cloudflare's free plan caps uploads at 100 MB; if files get bigger, leave `files` grey.
 
-### 2. One compose file
+**3. Compose.**
 
 ```yaml
 services:
   caddy:
     image: caddy:2
     ports: ["80:80", "443:443"]
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
+    volumes: [./Caddyfile:/etc/caddy/Caddyfile:ro, caddy_data:/data]
   app:
     image: ghcr.io/<me>/<app>:latest
     env_file: .env
-    depends_on: [db, garage]
+  worker:
+    image: ghcr.io/<me>/<app>:latest
+    env_file: .env
+    command: ["node", "worker.js"]
   db:
     image: postgres:18
     env_file: .env
-    volumes:
-      - pg_data:/var/lib/postgresql
+    volumes: [pg_data:/var/lib/postgresql]
   garage:
     image: dxflrs/garage:v2.2.0
-    volumes:
-      - ./garage.toml:/etc/garage.toml:ro
-      - garage_meta:/var/lib/garage/meta
-      - garage_data:/var/lib/garage/data
-volumes:
-  caddy_data:
-  pg_data:
-  garage_meta:
-  garage_data:
+    volumes: [./garage.toml:/etc/garage.toml:ro, garage_meta:/var/lib/garage/meta, garage_data:/var/lib/garage/data]
+volumes: { caddy_data: {}, pg_data: {}, garage_meta: {}, garage_data: {} }
 ```
 
 ```
 app.example.com {
 	reverse_proxy app:3000
 }
-
 files.example.com {
 	reverse_proxy garage:3900
 }
 ```
 
-`db` and `garage` have no `ports:` entry on purpose: the outside world reaches Garage only through Caddy, over HTTPS, and only its S3 API. `.env` and `garage.toml` (with real `rpc_secret` and `admin_token`, `replication_factor = 1`) live on the server only and never go into git.
+Only Caddy publishes ports. `.env` and `garage.toml` live on the server, never in git. Garage needs a one-time setup (`docker compose exec garage /garage …`): `layout assign` + `layout apply`, `bucket create uploads`, `key create`, `bucket allow`.
 
-Garage once, after the first `up` (each command via `docker compose exec garage /garage …`):
+**4. Deploy.** GitHub Actions: build the image, push to GHCR, SSH in, run migrations, `docker compose up -d app worker`.
 
-```sh
-garage status                                  # copy the node id
-garage layout assign -z dc1 -c 50G <node_id>
-garage layout apply --version 1
-garage bucket create uploads
-garage key create app-key                      # goes into .env
-garage bucket allow --read --write uploads --key app-key
-```
+**5. Backups.** Nightly `pg_dump` and an `rclone sync` of the bucket, both to a bucket **outside HostHatch**. Restore once before launch onto a fresh server and time it; a backup I've never restored is a guess.
 
-Then set the bucket's CORS rule (allow `POST` from `https://app.example.com`) with any S3 client, e.g. `aws s3api put-bucket-cors --endpoint-url https://files.example.com`.
+**6. Monitoring.** An external uptime check on `/health` (which queries the database), alerting my phone.
 
-### 3. Deploy
+## Legal: AI drafts, a lawyer reviews
 
-GitHub Actions on push to `main`: build the Docker image, push it to GHCR, SSH into the box, run migrations, then `docker compose pull app && docker compose up -d app`. Migrations run first, which is why they have to be additive.
+I've never done this part, so the process is: give the AI the facts, let it draft, pay an expert to fix it before the first paying user.
 
-### 4. Backups — the part that actually matters
+1. **Write down the facts.** What personal data I collect and why, where it lives (the HostHatch location), who else touches it (HostHatch, Cloudflare, Stripe, the email provider), how long I keep it, and how a user deletes their account. Plus where I am and where customers are — that decides which laws apply.
+2. **AI drafts** a privacy policy and terms of service from those facts. A cookie banner only if I add non-essential cookies like analytics; a data processing agreement only if businesses put their own customers' data in.
+3. **A lawyer reviews** the drafts for my jurisdiction. A one-off paid review of a decent draft costs far less than one written from scratch.
+4. The final texts live as Markdown pages on the site, dated, and get updated whenever the facts in step 1 change.
 
-The cheap single box is only acceptable because of this step.
+## Still open
 
-- Nightly `pg_dump -Fc` from a cron on the host, copied **off HostHatch** (any S3-compatible bucket at a different provider). Keep at least 7 dailies and 4 weeklies.
-- Garage's bucket gets the same treatment: a nightly `rclone sync` of `uploads` to the off-site bucket. A database row pointing at a file that no longer exists is still data loss.
-- HostHatch snapshots are a bonus, not the plan: before a risky change they're great, but they live in the same account as the thing they protect — and that account can be wiped over an unpaid invoice.
-- **Restore once before launch**: new server, fresh Postgres, `pg_restore`, files synced back into Garage, app boots against it. Write down how long it took. A backup I have never restored is a guess.
-
-### 5. Know when it's down
-
-An external uptime check on a `/health` route that also queries the database, alerting to my phone. Logs via `docker compose logs`; error tracking (Sentry or a self-hosted GlitchTip) once real users show up.
-
-## Still to decide
-
-The list I want answered before the first real project starts on this:
-
-- **ORM:** Prisma (what I know from PostReminder) or Drizzle (closer to SQL, lighter in Docker). The repository layer hides the choice from services either way.
-- **Auth:** copy PostReminder's opaque session id cookie + `sessions` table + Google OAuth, or use a library.
-- **Email:** a transactional provider for sign-up, password reset and receipts.
-- **Payments:** Stripe, with the webhook handler as an ordinary route → service.
-- **Background jobs:** a Postgres-backed queue (pg-boss style) in a worker container, so there's still no extra datastore.
-- **Edge:** whether to put Cloudflare in front for DNS, caching and DDoS cover.
-- **Legal:** privacy policy and terms before the first paying user.
+- **Email:** which transactional provider for sign-up, password reset and receipts.

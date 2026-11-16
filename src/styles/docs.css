@@ -5,9 +5,10 @@
   page, which is why these rules are global rather than scoped.
 */
 
-/* Wider than a column of prose: the menu needs its own room. */
+/* Wider than a column of prose: the menu needs its own room, and big screens
+   get used instead of leaving empty margins either side. */
 main.docs-page {
-	width: 1160px;
+	width: 1480px;
 }
 
 /* Page title and intro, above both panes. */
@@ -98,7 +99,7 @@ main.docs-page {
 /* ── The pane ─────────────────────────────────────────────────────── */
 .docs-body {
 	min-width: 0;
-	max-width: 44em;
+	max-width: 56em;
 }
 .doc-panel {
 	outline: none;
