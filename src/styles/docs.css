@@ -10,6 +10,14 @@
 main.docs-page {
 	width: 1480px;
 }
+/* Vault entries with a contents rail on the right need room for a third
+   column; the pane then takes the full width beside the menu. */
+main.docs-page--rail {
+	width: 1720px;
+}
+.docs-page--rail .docs-body {
+	max-width: none;
+}
 
 /* Page title and intro, above both panes. */
 .docs-head {

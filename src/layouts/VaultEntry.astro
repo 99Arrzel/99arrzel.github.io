@@ -24,6 +24,8 @@ type Props = CollectionEntry<'vault'>['data'] & {
 const { id, title, description, pubDate, updatedDate, topic, heroImage, minutes, sections, newer, older } =
 	Astro.props;
 const topicMeta = VAULT_TOPICS[topic];
+// Short entries read fine without a contents list.
+const hasToc = sections.length >= 3;
 ---
 
 <!doctype html>
@@ -33,10 +35,11 @@ const topicMeta = VAULT_TOPICS[topic];
 	</head>
 	<body>
 		<Header />
-		<main class="docs-page">
+		<main class:list={['docs-page', { 'docs-page--rail': hasToc }]}>
 			<!-- Entries are English-only, so is the menu beside them. -->
 			<Docs label="The Vault" mode="pages" current={title}>
 			<VaultMenu slot="menu" lang="en" current={id} />
+			<div class="entry-wrap">
 			<article class="entry">
 				<a class="topic-badge" href={`/vault#${topic}`}>
 					<span aria-hidden="true">{topicMeta.icon}</span> {topicMeta.name}
@@ -58,13 +61,13 @@ const topicMeta = VAULT_TOPICS[topic];
 				)}
 				<hr />
 				{
-					sections.length >= 3 && (
-						<nav class="toc" aria-label="On this page">
+					hasToc && (
+						<nav class="toc toc-inline" aria-label="On this page">
 							<p class="toc-label">On this page</p>
 							<ol>
 								{sections.map((s) => (
 									<li>
-										<a href={`#${s.slug}`}>{s.text}</a>
+										<a href={`#${s.slug}`} data-toc-link={s.slug}>{s.text}</a>
 									</li>
 								))}
 							</ol>
@@ -93,6 +96,26 @@ const topicMeta = VAULT_TOPICS[topic];
 					)
 				}
 			</article>
+			{
+				hasToc && (
+					<aside class="toc-rail" aria-label="On this page">
+						<p class="toc-label">On this page</p>
+						<div class="toc-track">
+							<span class="toc-fill" aria-hidden="true" />
+							<span class="toc-marker" aria-hidden="true" />
+							<ol>
+								{sections.map((s) => (
+									<li>
+										<a href={`#${s.slug}`} data-toc-link={s.slug}>{s.text}</a>
+									</li>
+								))}
+							</ol>
+						</div>
+						<a class="toc-top" href="#top">Back to top</a>
+					</aside>
+				)
+			}
+			</div>
 			</Docs>
 		</main>
 		<Footer />
@@ -179,6 +202,120 @@ const topicMeta = VAULT_TOPICS[topic];
 	.toc a:hover {
 		color: var(--accent);
 	}
+	.toc a.is-active {
+		color: var(--accent);
+	}
+	/* On wide screens the contents leave the top and become a sticky rail on
+	   the right that follows the reader; phones and narrow windows keep the box. */
+	.toc-rail {
+		display: none;
+	}
+	@media (min-width: 1400px) {
+		.entry-wrap {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) 13em;
+			gap: 2.5em;
+			align-items: start;
+		}
+		.toc-inline {
+			display: none;
+		}
+		.toc-rail {
+			display: block;
+			position: sticky;
+			top: calc(var(--header-height) + 1.5em);
+			max-height: calc(100vh - var(--header-height) - 3em);
+			overflow-y: auto;
+			scrollbar-width: thin;
+			font-size: 0.8em;
+		}
+	}
+	.toc-rail .toc-label {
+		margin-left: 1.1em;
+	}
+	/* The rail's line: grey track, an accent fill that grows with reading
+	   progress, and a marker that slides to the section in view. */
+	.toc-track {
+		position: relative;
+	}
+	.toc-track::before,
+	.toc-fill {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 0;
+		width: 2px;
+		border-radius: 2px;
+	}
+	.toc-track::before {
+		background: var(--border);
+	}
+	.toc-fill {
+		background: linear-gradient(var(--accent-dark), var(--accent));
+		transform: scaleY(var(--progress, 0));
+		transform-origin: top;
+	}
+	.toc-marker {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: var(--marker-h, 0);
+		transform: translateY(var(--marker-y, 0));
+		border-left: 2px solid var(--accent);
+		border-radius: 0 8px 8px 0;
+		background: linear-gradient(90deg, var(--accent-soft), transparent);
+		box-shadow: -4px 0 12px -4px var(--accent);
+		opacity: 0;
+		pointer-events: none;
+		transition:
+			transform 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+			height 0.35s cubic-bezier(0.2, 0.7, 0.2, 1),
+			opacity 0.2s ease;
+	}
+	.toc-marker.is-on {
+		opacity: 1;
+	}
+	.toc-rail ol {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.toc-rail ol a {
+		display: block;
+		padding: 0.45em 0.6em 0.45em 1.1em;
+		color: var(--text-light);
+		line-height: 1.35;
+		text-decoration: none;
+		transition: color 0.25s ease;
+	}
+	.toc-rail ol a.is-read {
+		color: var(--text);
+	}
+	.toc-rail ol a.is-active {
+		color: var(--text-heading);
+	}
+	.toc-rail ol a:hover {
+		color: var(--accent);
+	}
+	.toc-top {
+		display: inline-block;
+		margin: 1.2em 0 0 1.1em;
+		font-family: var(--mono);
+		font-size: 0.85em;
+		color: var(--text-light);
+		text-decoration: none;
+	}
+	.toc-top:hover {
+		color: var(--accent);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.toc-marker,
+		.toc-rail ol a {
+			transition: none;
+		}
+	}
 	/* The rendered markdown. Global rules in global.css already style headings,
 	   paragraphs, code, blockquotes and (responsively) images inside here. */
 	.prose :global(h2) {
@@ -258,3 +395,54 @@ const topicMeta = VAULT_TOPICS[topic];
 		}
 	}
 </style>
+
+<script>
+	// Scroll-spy for the contents: the section being read lights up in both
+	// lists, earlier ones count as read, and the rail's line fills as you go.
+	const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-toc-link]'));
+	const slugs = [...new Set(links.map((a) => a.dataset.tocLink ?? ''))];
+	const headings = slugs.map((s) => document.getElementById(s)).filter((h) => h !== null);
+	const rail = document.querySelector<HTMLElement>('.toc-rail');
+	const marker = rail?.querySelector<HTMLElement>('.toc-marker');
+	const prose = document.querySelector<HTMLElement>('.entry .prose');
+
+	if (headings.length && prose) {
+		let frame = 0;
+		const update = () => {
+			frame = 0;
+			// A section counts as "being read" once its heading passes 30% down the screen.
+			const line = window.innerHeight * 0.3;
+			const atEnd = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
+			let active = -1;
+			headings.forEach((h, i) => {
+				if (h.getBoundingClientRect().top <= line) active = i;
+			});
+			if (atEnd) active = headings.length - 1;
+
+			for (const a of links) {
+				const i = slugs.indexOf(a.dataset.tocLink ?? '');
+				a.classList.toggle('is-active', i === active);
+				a.classList.toggle('is-read', i < active);
+				if (i === active) a.setAttribute('aria-current', 'true');
+				else a.removeAttribute('aria-current');
+			}
+
+			if (!rail || !marker) return;
+			const current = active >= 0 ? rail.querySelector<HTMLElement>(`[data-toc-link="${CSS.escape(headings[active].id)}"]`) : null;
+			marker.classList.toggle('is-on', current !== null);
+			if (current) {
+				marker.style.setProperty('--marker-y', `${current.offsetTop}px`);
+				marker.style.setProperty('--marker-h', `${current.offsetHeight}px`);
+			}
+			const box = prose.getBoundingClientRect();
+			const progress = atEnd ? 1 : Math.min(1, Math.max(0, (line - box.top) / box.height));
+			rail.style.setProperty('--progress', progress.toFixed(4));
+		};
+		const schedule = () => {
+			if (!frame) frame = requestAnimationFrame(update);
+		};
+		addEventListener('scroll', schedule, { passive: true });
+		addEventListener('resize', schedule);
+		update();
+	}
+</script>
