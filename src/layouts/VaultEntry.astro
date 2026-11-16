@@ -134,6 +134,29 @@ const topicMeta = VAULT_TOPICS[topic];
 		margin: 1.6em 0 0.5em;
 		font-size: 1.2em;
 	}
+	/* Tables size to their content instead of spreading over the wide pane, with
+	   row rules so columns read as columns. */
+	.prose :global(table) {
+		width: auto;
+		margin: 0 0 1.5em;
+		border-collapse: collapse;
+	}
+	.prose :global(th),
+	.prose :global(td) {
+		padding: 0.45em 1.4em 0.45em 0;
+		border-bottom: 1px solid var(--border);
+		vertical-align: top;
+	}
+	.prose :global(th) {
+		border-bottom-color: var(--text-light);
+		font-size: 0.8em;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		color: var(--text-light);
+	}
+	.prose :global(:is(th, td):last-child) {
+		padding-right: 0;
+	}
 	/* Somewhere to go at the end of an entry other than back up. */
 	.neighbours {
 		display: grid;

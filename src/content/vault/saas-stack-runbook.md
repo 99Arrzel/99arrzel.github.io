@@ -91,10 +91,10 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 ## Server: HostHatch, 16 GB for $15
 
 | Plan | Cores | RAM | NVMe | Transfer | $/month |
-|---|---|---|---|---|---|
-| NVMe 8 GB | 2 shared | 8 GB | 35 GB | 2 TB | 9 |
-| NVMe 12 GB | 1 dedicated + 3 shared | 12 GB | 50 GB | 3 TB | 12 |
-| **NVMe 16 GB** | **2 dedicated + 2 shared** | **16 GB** | **75 GB** | **4 TB** | **15** |
+|---|---|--:|--:|--:|--:|
+| NVMe 8 GB | 2 shared | 8 GB | 35 GB | 2 TB | $9 |
+| NVMe 12 GB | 1 dedicated + 3 shared | 12 GB | 50 GB | 3 TB | $12 |
+| **NVMe 16 GB** | **2 dedicated + 2 shared** | **16 GB** | **75 GB** | **4 TB** | **$15** |
 
 - Cheaper than Hetzner, whose 16 GB plan is €15.99 plus IPv4 and VAT since its June 2026 price rise, with no dedicated cores.
 - **Disk runs out before RAM.** When uploads outgrow 75 GB, Garage moves to a HostHatch storage VM (from $5/month for 1 TB) on the private network.
