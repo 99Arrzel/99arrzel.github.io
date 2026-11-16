@@ -17,7 +17,7 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 | App | Next.js + oRPC |
 | Backend code | Plain functions: routes → services → repositories |
 | Database | Postgres + Prisma |
-| Auth | Session cookie + `sessions` table, password + Google |
+| Auth | Password + Google sign-in; Better Auth once I need more |
 | Real-time | Server-Sent Events, fanned out with Postgres `LISTEN/NOTIFY` |
 | Files | Garage, uploaded straight from the browser with a presigned POST |
 | Payments | Stripe |
@@ -135,7 +135,11 @@ What I build is relational, so Postgres; the odd loose document goes in a `jsonb
 
 ## Auth
 
-An opaque session id in an HTTP-only cookie, looked up in a `sessions` table, with password and Google sign-in. Libraries like Better Auth or Auth.js would cover the same ground; I stay with the setup I already know end to end.
+Password plus **Sign in with Google**, because nearly everyone already has a Google account. My own version is small: an opaque session id in an HTTP-only cookie, looked up in a `sessions` table.
+
+Anything beyond that — magic links, two-factor, passkeys, more OAuth providers, organisations — goes to **[Better Auth](https://better-auth.com)**. It's TypeScript, ships a Prisma adapter, and covers those as plugins; Auth.js (NextAuth) is now maintained by the same team, so it's the obvious default.
+
+The warning: a hand-rolled auth layer is always more code and more room for bugs, and auth bugs are the expensive kind. Keep the custom part to password + Google, and reach for the library the moment it would grow.
 
 ## Real-time: SSE + `LISTEN/NOTIFY`
 
@@ -280,11 +284,7 @@ Only Caddy publishes ports. `.env` and `garage.toml` live on the server, never i
 
 I've never done this part, so the process is: give the AI the facts, let it draft, pay an expert to fix it before the first paying user.
 
-1. **Write down the facts.** What personal data I collect and why, where it lives (the HostHatch location), who else touches it (HostHatch, Cloudflare, Stripe, the email provider), how long I keep it, and how a user deletes their account. Plus where I am and where customers are — that decides which laws apply.
+1. **Write down the facts.** What personal data I collect and why, where it lives (the HostHatch location), who else touches it (HostHatch, Cloudflare, Stripe, Google sign-in), how long I keep it, and how a user deletes their account. Plus where I am and where customers are — that decides which laws apply.
 2. **AI drafts** a privacy policy and terms of service from those facts. A cookie banner only if I add non-essential cookies like analytics; a data processing agreement only if businesses put their own customers' data in.
 3. **A lawyer reviews** the drafts for my jurisdiction. A one-off paid review of a decent draft costs far less than one written from scratch.
 4. The final texts live as Markdown pages on the site, dated, and get updated whenever the facts in step 1 change.
-
-## Still open
-
-- **Email:** which transactional provider for sign-up, password reset and receipts.
