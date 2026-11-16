@@ -5,7 +5,7 @@ pubDate: 'Nov 15 2026'
 topic: 'building'
 ---
 
-The stack I reach for when I want to ship a small SaaS without thinking about the stack. Same shape as PostReminder, minus what a one-person product doesn't need. Every choice is the boring one on purpose, and an agent can scaffold most of it in one go.
+The stack I reach for when I want to ship a small SaaS without thinking about the stack. Every choice is the boring one on purpose, and an agent can scaffold most of it in one go.
 
 ## The stack
 
@@ -17,7 +17,7 @@ The stack I reach for when I want to ship a small SaaS without thinking about th
 | App | Next.js + oRPC |
 | Backend code | Plain functions: routes → services → repositories |
 | Database | Postgres + Prisma |
-| Auth | Session cookie + `sessions` table, password + Google (PostReminder's) |
+| Auth | Session cookie + `sessions` table, password + Google |
 | Real-time | Server-Sent Events, fanned out with Postgres `LISTEN/NOTIFY` |
 | Files | Garage, uploaded straight from the browser with a presigned POST |
 | Payments | Stripe |
@@ -131,15 +131,15 @@ export function insert(db: DbOrTx, data: Prisma.ProjectUncheckedCreateInput) {
 
 ## Database: Postgres + Prisma
 
-What I build is relational, so Postgres; the odd loose document goes in a `jsonb` column. Prisma because I know it from PostReminder. Defaults I carry over: UUID v7 ids (never a sequential id in a URL), additive-only migrations, `deletedAt` soft delete, and Postgres never exposed to the internet.
+What I build is relational, so Postgres; the odd loose document goes in a `jsonb` column. Prisma because it's what I know best. Defaults: UUID v7 ids (never a sequential id in a URL), additive-only migrations, `deletedAt` soft delete, and Postgres never exposed to the internet.
 
 ## Auth
 
-PostReminder's setup: an opaque session id in an HTTP-only cookie, looked up in a `sessions` table, with password and Google sign-in. Libraries like Better Auth or Auth.js would cover the same ground; I stay with the one I already know end to end.
+An opaque session id in an HTTP-only cookie, looked up in a `sessions` table, with password and Google sign-in. Libraries like Better Auth or Auth.js would cover the same ground; I stay with the setup I already know end to end.
 
 ## Real-time: SSE + `LISTEN/NOTIFY`
 
-Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service. PostReminder chose it because a WebSocket service meant another AWS service I'm not the admin for, and nothing pushes from the user to the server anyway.
+Updates only go server → browser, so **Server-Sent Events** through an oRPC streaming procedure (`eventIterator`). It reuses the normal auth and runs inside Next.js — no second service. WebSockets only earn their place when the browser has to push to the server, and nothing here does.
 
 1. Write the event row in Postgres.
 2. In the same transaction, `SELECT pg_notify('events', '<event id>')`. Postgres only delivers it **if the transaction commits**, so nobody hears about a rolled-back row.
