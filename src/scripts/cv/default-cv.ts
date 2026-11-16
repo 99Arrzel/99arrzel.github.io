@@ -48,7 +48,7 @@ Jun 2026 – Oct 2026
 Jul 2025 – Present
 
 - Designed and run the team's agentic development workflow — parallel LLM agents in isolated git worktrees behind automated review gates.
-- Monthly merged PRs rose from ~18 to ~100 after adopting it in March 2026 — 770 merges in total, the largest share on a six-engineer team.
+- Monthly merged PRs rose from ~18 to ~100 after adopting it in March 2026, 770 merges in total.
 - Migrated a legacy PHP product to a Next.js 16 / React 19 / TypeScript monorepo (Turborepo + Bun workspaces), unifying the type system across web, API and shared packages.
 - Own the AWS pipeline end to end: GitHub Actions → ECR → ECS via CloudFormation, including scheduled ECS tasks, environment promotion and rollback.
 - Own database design on MySQL/Prisma — schema-first migrations, idempotent DDL, and a custom TypeScript runner for safe, resumable production backfills.
@@ -152,7 +152,7 @@ Jun 2026 – Oct 2026
 Jul 2025 – Presente
 
 - Diseñé y opero el flujo de desarrollo agéntico del equipo: agentes LLM en paralelo, en git worktrees aislados, detrás de controles de revisión automatizados.
-- Los PR mergeados por mes pasaron de ~18 a ~100 tras adoptarlo en marzo de 2026 — 770 merges en total, la mayor parte en un equipo de seis ingenieros.
+- Los PR mergeados por mes pasaron de ~18 a ~100 tras adoptarlo en marzo de 2026, 770 merges en total.
 - Migré un producto PHP heredado a un monorepo Next.js 16 / React 19 / TypeScript (Turborepo + Bun workspaces), unificando el sistema de tipos entre web, API y paquetes compartidos.
 - Soy responsable del pipeline de AWS de punta a punta: GitHub Actions → ECR → ECS vía CloudFormation, incluyendo tareas programadas de ECS, promoción entre entornos y rollback.
 - Soy responsable del diseño de base de datos en MySQL/Prisma: migraciones schema-first, DDL idempotente y un runner propio en TypeScript para backfills en producción seguros y reanudables.
