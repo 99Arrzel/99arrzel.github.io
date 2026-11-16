@@ -25,14 +25,17 @@ const doc = parseResume(lang === 'es' ? DEFAULT_CV_ES : DEFAULT_CV);
 const sheet = renderSheet(doc);
 const pdfName = suggestFilename(doc.profile.name, doc.profile.title);
 // Paper rules only the print path needs. `@page` can't take a CSS variable,
-// so the page size is written in from the document's own setting.
+// so the page size is written in from the document's own setting. The
+// `!important`s beat this component's scoped rules, which outrank a plain
+// selector: without them the screen column (wider than the paper) and the
+// paper shadow reach the PDF, and the browser shrinks the whole page to fit.
 const printCss = `@media print {
 	@page { size: ${doc.settings.page}; margin: 0; }
 	html, body { margin: 0; padding: 0; background: #fff !important; }
-	body > :not(main), .skip-link, .resume-bar { display: none !important; }
-	main.resume { width: auto; max-width: none; margin: 0; padding: 0; }
+	body > :not(main), .skip-link, .resume-bar, .resume-paper { display: none !important; }
+	main.resume { width: auto !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
 	.resume-fit { zoom: 1 !important; }
-	.resume-fit .sheet { box-shadow: none; }
+	.resume-fit .sheet { box-shadow: none !important; }
 }`;
 ---
 
@@ -83,6 +86,37 @@ const printCss = `@media print {
 				btn.addEventListener('click', () => print());
 			})();
 		</script>
+		<script>
+			import { settlePages } from '../../scripts/cv/pages';
+
+			// Lay the CV out as the pages it prints on: a margin across every page
+			// break (the PDF needs these too), and on screen one sheet of paper per
+			// page with a gap between them.
+			const GAP = 28;
+			const fit = document.getElementById('resume-fit');
+			const sheet = fit?.querySelector<HTMLElement>('.sheet');
+			if (fit && sheet) {
+				void document.fonts.ready.then(() => {
+					// Measure at full size; the inline script re-applies the fit zoom.
+					fit.style.zoom = '1';
+					const pageH = (sheet.classList.contains('p-A4') ? 297 / 25.4 : 11) * 96;
+					const { pages } = settlePages(sheet, pageH);
+					const paper = getComputedStyle(sheet).background;
+					for (const old of Array.from(fit.querySelectorAll('.resume-paper'))) old.remove();
+					for (let i = 0; i < pages; i++) {
+						const top = i * pageH + (i > 0 ? GAP / 2 : 0);
+						const bottom = (i + 1) * pageH - (i < pages - 1 ? GAP / 2 : 0);
+						const p = document.createElement('div');
+						p.className = 'resume-paper';
+						p.setAttribute('aria-hidden', 'true');
+						p.style.cssText = `top:${sheet.offsetTop + top}px;left:${sheet.offsetLeft}px;width:${sheet.offsetWidth}px;height:${bottom - top}px;background:${paper}`;
+						fit.prepend(p);
+					}
+					fit.classList.add('is-paged');
+					dispatchEvent(new Event('resize'));
+				});
+			}
+		</script>
 	</body>
 </html>
 
@@ -114,9 +148,25 @@ const printCss = `@media print {
 		color: var(--text-light);
 	}
 	.resume-fit {
+		position: relative;
 		width: 100%;
 	}
-	.resume-fit :global(.sheet) {
+	@media screen {
+		.resume-fit :global(.sheet) {
+			box-shadow:
+				0 4px 12px rgba(0, 0, 0, 0.5),
+				0 16px 48px rgba(0, 0, 0, 0.4);
+		}
+		/* Paged: the sheet goes see-through and sits on one piece of paper per
+		   page, so the gap between pages shows the site behind it. */
+		.resume-fit.is-paged :global(.sheet) {
+			z-index: 1;
+			background: transparent;
+			box-shadow: none;
+		}
+	}
+	.resume-fit :global(.resume-paper) {
+		position: absolute;
 		box-shadow:
 			0 4px 12px rgba(0, 0, 0, 0.5),
 			0 16px 48px rgba(0, 0, 0, 0.4);

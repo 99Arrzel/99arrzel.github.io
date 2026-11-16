@@ -33,6 +33,7 @@ import {
 	type Doc,
 } from './store';
 import { TEMPLATES, type DensityId, type PageId, type Resume, type SectionKind, type TemplateId } from './types';
+import { settlePages } from './pages';
 
 type Tab = 'form' | 'markdown' | 'ats';
 
@@ -194,55 +195,6 @@ export function boot(): void {
 		};
 	}
 
-	function topWithin(el: HTMLElement, root: HTMLElement): number {
-		let y = 0;
-		let node: HTMLElement | null = el;
-		while (node && node !== root) {
-			y += node.offsetTop;
-			node = node.offsetParent as HTMLElement | null;
-		}
-		return y;
-	}
-
-	/**
-	 * Push content out of the code's corner.
-	 *
-	 * The stamp is absolutely positioned, so it displaces nothing — printed as-is
-	 * it lands on top of the bullets. There is no CSS that reserves a per-page
-	 * region in a continuous flow, so the space is taken by inserting spacers
-	 * ahead of the first block that would collide, which moves that block past
-	 * the band. Returns true if anything moved, so the caller can re-measure.
-	 */
-	function reserveBands(sheet: HTMLElement, bands: { top: number; bottom: number }[]): boolean {
-		const body = sheet.querySelector<HTMLElement>('.cv-body') ?? sheet;
-		let moved = false;
-		for (let pass = 0; pass < 12; pass++) {
-			const blocks = Array.from(
-				body.querySelectorAll<HTMLElement>('.cv-entry, .cv-bullets > li, .cv-items > li, .cv-skill, .cv-text, .cv-sec > h2'),
-			);
-			let didThisPass = false;
-			for (const band of bands) {
-				for (const b of blocks) {
-					if (b.dataset.kept === '1') continue;
-					const top = topWithin(b, sheet);
-					const bottom = top + b.offsetHeight;
-					if (bottom <= band.top || top >= band.bottom) continue;
-					const spacer = document.createElement('div');
-					spacer.className = 'cv-keepout';
-					spacer.style.height = `${Math.ceil(band.bottom - top)}px`;
-					b.parentElement?.insertBefore(spacer, b);
-					b.dataset.kept = '1';
-					didThisPass = true;
-					moved = true;
-					break;
-				}
-				if (didThisPass) break;
-			}
-			if (!didThisPass) break;
-		}
-		return moved;
-	}
-
 	function reportQr(build: QrBuild | null): void {
 		if (!qrReadout) return;
 		if (qrError) {
@@ -314,61 +266,20 @@ export function boot(): void {
 		const sheet = shell!.querySelector<HTMLElement>('.sheet');
 		if (!sheet) return;
 
-		// Natural content height first — the CSS min-height would mask it.
-		sheet.style.minHeight = '0px';
-		const contentH = sheet.offsetHeight;
-		let pages = Math.max(1, Math.ceil((contentH - 4) / pageH));
-		// Reserving space for a stamp adds height, so the fill readout is taken
-		// from whatever the content measures *after* that.
-		let usedH = contentH;
-		// Pad the sheet to a whole number of pages so "bottom of the sheet" and
-		// "bottom of the last page" are the same line, which is what lets a
-		// stamp sit in the corner rather than wherever the text happened to end.
-		sheet.style.minHeight = `${pages * pageH - 0.5}px`;
-
 		const stamp = sheet.querySelector<HTMLElement>('.cv-qr');
 		const stampH = stamp ? stamp.offsetHeight : build ? build.sizePx : 0;
 		const stampMargin = mmToPx(10);
-		// The sheet's padding is on the box, so CSS lays it down once at the very
-		// top and once at the very bottom of the whole document — never at an
-		// internal page break. Left alone, text runs into the physical edge of
-		// page one and starts hard against the edge of page two. Reserving a band
-		// straddling each break gives the bottom of one page and the top of the
-		// next the same margin as the rest of the sheet.
-		const edge = Number.parseFloat(getComputedStyle(sheet).paddingBottom) || mmToPx(15);
+		const stampPages = (pages: number) =>
+			resume.settings.qrEvery ? Array.from({ length: pages }, (_, i) => i) : [pages - 1];
 
-		{
-			// Reserving space can push content onto another page, which moves every
-			// band — so re-measure until the page count settles.
-			let settled = pages;
-			for (let attempt = 0; attempt < 6; attempt++) {
-				for (const old of Array.from(sheet.querySelectorAll('.cv-keepout'))) old.remove();
-				for (const kept of Array.from(sheet.querySelectorAll<HTMLElement>('[data-kept]'))) delete kept.dataset.kept;
-
-				const bands: { top: number; bottom: number }[] = [];
-				for (let i = 1; i < settled; i++) {
-					bands.push({ top: i * pageH - edge, bottom: i * pageH + edge });
-				}
-				if (build) {
-					const targets = resume.settings.qrEvery ? Array.from({ length: settled }, (_, i) => i) : [settled - 1];
-					for (const i of targets) {
-						bands.push({ top: (i + 1) * pageH - stampMargin - stampH, bottom: (i + 1) * pageH });
-					}
-				}
-
-				sheet.style.minHeight = '0px';
-				reserveBands(sheet, bands);
-				usedH = sheet.offsetHeight;
-				const grown = Math.max(1, Math.ceil((usedH - 4) / pageH));
-				if (grown === settled) break;
-				settled = grown;
-			}
-			pages = settled;
-			sheet.style.minHeight = `${pages * pageH - 0.5}px`;
-		}
+		// Page-break margins plus the corner each stamp needs. `usedH` feeds the
+		// fill readout: it's the content height after space was reserved.
+		const { pages, usedH } = settlePages(sheet, pageH, (n) =>
+			build ? stampPages(n).map((i) => ({ top: (i + 1) * pageH - stampMargin - stampH, bottom: (i + 1) * pageH })) : [],
+		);
 
 		if (build) {
-			const targets = resume.settings.qrEvery ? Array.from({ length: pages }, (_, i) => i) : [pages - 1];
+			const targets = stampPages(pages);
 			const tops = targets.map((i) => (i + 1) * pageH - stampMargin - stampH);
 			for (const node of Array.from(sheet.querySelectorAll<HTMLElement>('.cv-qr'))) node.remove();
 			for (const top of tops) {
